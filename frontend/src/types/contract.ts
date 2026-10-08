@@ -132,7 +132,7 @@ export interface VisionFeaturesPayload {
   head_pitch: number | null;
   gaze_x: number | null;
   gaze_y: number | null;
-  face_present: boolean;
+  face_present: boolean | null;
   landmark_conf: number | null;
   camera_on: boolean;
   page_visible: boolean;

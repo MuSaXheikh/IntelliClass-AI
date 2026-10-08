@@ -2,16 +2,33 @@
 
 What this demo shows: an instructor starts a class, students join after consent, their browsers analyse the webcam on-device, the dashboard shows status signals, a persistent condition raises an alert, the instructor sends a private nudge, the student replies, and a report is produced. Nothing about a student ever leaves their device except numbers.
 
+## 0. Prepare while you still have internet (once)
+
+```bash
+cd backend  && uv sync && cp .env.example .env && uv run python -m scripts.seed
+cd ../frontend && source ~/.nvm/nvm.sh && nvm use 22 && pnpm install && cp .env.local.example .env.local && pnpm build
+```
+
+After this, nothing below needs a connection: the API, the SQLite database, the Swagger page, the MediaPipe model and WASM runtime (served from `frontend/public/`) and the fonts are all local. The only thing that needs internet is LiveKit audio/video, which the offline demo skips.
+
 ## 1. Start everything
 
 ```bash
 # terminal 1
 cd backend && uv run uvicorn app.main:app --port 8000
-# terminal 2 (first time only: uv run python -m scripts.seed)
-cd frontend && nvm use && pnpm dev
+# terminal 2 (production build, no internet needed)
+cd frontend && source ~/.nvm/nvm.sh && nvm use 22 && pnpm start
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000 (API docs at http://localhost:8000/docs). For two logins on one laptop use a normal window plus an incognito window, or two browser profiles.
+
+### Second laptop over a phone hotspot (no data needed)
+
+1. On the demo laptop: `hostname -I` → e.g. `192.168.43.10`.
+2. `frontend/.env.local`: `NEXT_PUBLIC_API_URL=http://192.168.43.10:8000/api/v1` and `NEXT_PUBLIC_WS_URL=ws://192.168.43.10:8000/ws`, then `pnpm build` again (while online).
+3. `backend/.env`: `ALLOWED_ORIGINS=http://localhost:3000,http://192.168.43.10:3000`.
+4. On the student laptop open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, add `http://192.168.43.10:3000`, enable, relaunch. Browsers only allow the camera on HTTPS or localhost; this flag is the one-time exception for a LAN demo.
+5. Open `http://192.168.43.10:3000` on the student laptop.
 
 ## 2. Instructor flow (browser window A)
 

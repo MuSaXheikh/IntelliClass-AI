@@ -39,7 +39,7 @@ const NULL_PACKET: Omit<VisionFeaturesPayload, "camera_on" | "page_visible" | "w
   head_pitch: null,
   gaze_x: null,
   gaze_y: null,
-  face_present: false,
+  face_present: null, // unknown while the model loads: the server shows "uncertain", not "no face"
   landmark_conf: null,
 };
 

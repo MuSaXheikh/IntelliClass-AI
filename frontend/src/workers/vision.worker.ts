@@ -124,6 +124,25 @@ function flushPacket(): void {
   post({ type: "packet", packet: state.aggregator.flush(performance.now()) });
 }
 
+/** Try the GPU delegate first; some laptops and VMs have no WebGL in workers, so fall back to CPU. */
+async function createLandmarker(
+  fileset: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>,
+  modelUrl: string,
+): Promise<FaceLandmarker> {
+  const options = (delegate: "GPU" | "CPU") => ({
+    baseOptions: { modelAssetPath: modelUrl, delegate },
+    runningMode: "VIDEO" as const,
+    numFaces: 2,
+    outputFaceBlendshapes: false,
+    outputFacialTransformationMatrixes: true,
+  });
+  try {
+    return await FaceLandmarker.createFromOptions(fileset, options("GPU"));
+  } catch {
+    return FaceLandmarker.createFromOptions(fileset, options("CPU"));
+  }
+}
+
 async function init(message: Extract<VisionWorkerInbound, { type: "init" }>): Promise<void> {
   state.earThreshold = message.earThreshold;
   state.aggregator = new FeatureAggregator({
@@ -133,13 +152,7 @@ async function init(message: Extract<VisionWorkerInbound, { type: "init" }>): Pr
   });
   try {
     const fileset = await FilesetResolver.forVisionTasks(message.wasmBase);
-    const landmarker = await FaceLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: message.modelUrl, delegate: "GPU" },
-      runningMode: "VIDEO",
-      numFaces: 2,
-      outputFaceBlendshapes: false,
-      outputFacialTransformationMatrixes: true,
-    });
+    const landmarker = await createLandmarker(fileset, message.modelUrl);
     if (state.stopped) {
       landmarker.close();
       return;
