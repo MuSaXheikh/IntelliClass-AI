@@ -1,0 +1,50 @@
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# --- secrets ---
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+*.egg-info/
+backend/storage/
+backend/*.db
+backend/*.sqlite3
+
+# --- Node ---
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+.pnpm-store/
+playwright-report/
+test-results/
+
+# --- ML artefacts (never commit datasets or large models) ---
+ml/datasets/*
+!ml/datasets/README.md
+ml/models/*
+!ml/models/README.md
+*.pt
+*.onnx
+*.h5
+*.ckpt
+
+# --- infra ---
+infra/k6/results/
