@@ -6,6 +6,7 @@ import { ConsentGate } from "@/components/consent/ConsentGate";
 import { Spinner } from "@/components/ui/Spinner";
 import { api, ApiError } from "@/lib/api";
 import { writeJoinInfo } from "@/lib/joinStore";
+import { probeMedia } from "@/lib/media";
 import type { ClassSummary, JoinResponse, Session } from "@/types/contract";
 
 export default function ConsentPage() {
@@ -23,20 +24,7 @@ export default function ConsentPage() {
       .catch(() => setClassName("Live class"));
   }, [sessionId]);
 
-  const join = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      // Permissions are requested only after explicit agreement; tracks stop immediately.
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-    } catch {
-      setError(
-        "Camera and microphone permission is needed to join. Please allow them and try again.",
-      );
-      setBusy(false);
-      return;
-    }
+  const completeJoin = async () => {
     try {
       const info = await api.post<JoinResponse>(`/sessions/${sessionId}/join`, { consent: true });
       writeJoinInfo(sessionId, info);
@@ -45,6 +33,21 @@ export default function ConsentPage() {
       setError(caught instanceof ApiError ? caught.message : "Could not join the class.");
       setBusy(false);
     }
+  };
+
+  /** Permissions are requested only after explicit agreement; tracks stop immediately. */
+  const join = async () => {
+    setBusy(true);
+    setError(null);
+    const camera = await probeMedia("camera");
+    if (!camera.ok) {
+      setError(`${camera.reason} Camera access is required to join the class.`);
+      setBusy(false);
+      return;
+    }
+    // The microphone is only needed for live audio; a missing mic must not block attendance.
+    await probeMedia("microphone");
+    await completeJoin();
   };
 
   if (className === null) return <Spinner label="Loading class" />;

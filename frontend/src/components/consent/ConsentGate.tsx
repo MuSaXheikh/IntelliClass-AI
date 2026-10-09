@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { describeMediaError } from "@/lib/media";
 
 interface ConsentGateProps {
   className: string;
@@ -38,8 +39,8 @@ export function ConsentGate({ className, busy, error, onJoin, onCancel }: Consen
         await videoRef.current.play().catch(() => undefined);
       }
       setTesting(true);
-    } catch {
-      setTestError("Camera could not be opened. Check browser permissions.");
+    } catch (caught) {
+      setTestError(describeMediaError(caught, "camera"));
     }
   };
 
@@ -57,7 +58,7 @@ export function ConsentGate({ className, busy, error, onJoin, onCancel }: Consen
           comparison comes in a later version; no screenshots are taken.
         </li>
         <li>
-          ✔ <strong>Microphone:</strong> to take part in class
+          ✔ <strong>Microphone:</strong> optional, to speak in class
         </li>
         <li>✘ We never record or store video or screens</li>
       </ul>
