@@ -270,31 +270,38 @@ number behind it.
  • Before joining, each student sees a plain-language notice of which signals are analysed
  and grants camera, microphone and screen permissions one by one.
  • Audio and video travel over WebRTC through a Selective Forwarding Unit, which
- scales much better than peer-to-peer connections, while events and alerts use a separate
- secure WebSocket channel backed by Redis.
+ scales much better than peer-to-peer connections. Only the instructor publishes video; a
+ student’s camera feeds the local vision worker and is never transmitted. Events and
+ alerts use a separate secure WebSocket channel served by an in-process event bus, with
+ Redis pub/sub added only if the API ever has to run as several replicas.
 7.2 On-Device Vision Pipeline for Drowsiness and Attention
 The first objective lives entirely in the student’s browser, built on MediaPipe Face Mesh
-(Kartynnik et al., 2019) [13]. Camera frames are sampled at five to ten per second and 468
+(Kartynnik et al., 2019) [13] running inside a Web Worker so that it keeps working when the
+class tab is in the background. Camera frames are sampled at five to ten per second and 468
 landmarks are extracted from each. From those we compute the Eye Aspect Ratio (Soukupová
 & Čech, 2016) [10], blink rate and PERCLOS for drowsiness, and head pose together with gaze
 direction for attention. Nothing but these numbers leaves the device. On the server, a temporal
 classifier looks at a sliding window of them to decide the student’s state. A blink or a quick
 glance is therefore not mistaken for drowsiness or distraction, and the classifier reports an
 uncertain state whenever lighting or camera angle make the estimate unreliable. We will
-compare the rule-based EAR baseline against a learned classifier trained on public datasets
+compare the rule-based EAR baseline against a learned classifier trained on public datasets
 such as the MRL Eye Dataset, YawDD and DAiSEE (Gupta et al., 2016) [7], together with a
 small test set that we record ourselves, with consent.
- Figure 1: On-device vision pipeline for drowsiness and attention detection
+
+ Figure 1: On-device vision pipeline for drowsiness and attention detection
 
 7.3 Screen-Content Compliance and Slide Matching
 The second objective asks whether what the student sees matches what is being taught. The
-shared screen is sampled every few seconds, and a perceptual-hash filter drops frames that have
-not changed, which removes most of the processing cost. Frames that did change go through
-OCR (Du et al., 2020) [14] and image/text embeddings (Radford et al., 2021; Reimers &
-Gurevych, 2019) [15], [16], and the result is compared with the embedding of the instructor’s
-current slide and the slides on either side of it. Scrolling, a page still loading, or opening a
-reference will all cause a short mismatch, so a low similarity score has to persist beyond a
-configurable grace period before a compliance event is raised.
+baseline needs no model at all: the browser reports whether the class tab is still visible and in
+front, which already catches a switch to another window or application without taking a single
+screenshot. The content comparison is the extension built on top of it. The shared screen is
+sampled every few seconds, and a perceptual-hash filter drops frames that have not changed,
+which removes most of the processing cost. Frames that did change go through OCR (Du et al.,
+2020) [14] and image/text embeddings (Radford et al., 2021; Reimers & Gurevych, 2019) [15],
+[16], and the result is compared with the embedding of the instructor’s current slide and the
+slides on either side of it. Scrolling, a page still loading, or opening a reference will all cause a
+short mismatch, so a low similarity score has to persist beyond a configurable grace period
+before a compliance event is raised.
 
  Figure 2: Screen-content compliance and slide-matching pipeline
 
@@ -302,12 +309,12 @@ configurable grace period before a compliance event is raised.
 The third objective is the part that turns raw detections into something an instructor can use.
 Each event carries the student identifier, event type, timestamp, confidence, duration and the
 module that produced it. An alert is raised only when three conditions hold at once: the
-confidence is above a threshold, the condition has persisted longer than a configurable duration
+confidence is above a threshold, the condition has persisted longer than a configurable duration
 (drowsiness beyond five seconds, say, or looking away beyond twenty), and the same alert is
 not inside its cooldown window. Repeated events are grouped, which stops one struggling
 student from flooding the dashboard, and alerts are ordered by severity. We will tune every
 threshold on a validation set and report the values, rather than pick them by feel.
-The engine also provides a private nudge. When the instructor taps an alert, a short message
+The engine also provides a private nudge. When the instructor taps an alert, a short message
 and a soft sound go out over the WebSocket channel of that one student, who is quietly pulled
 back to the lecture while the rest of the class hears and sees nothing. The nudge is addressed to a
 single session identifier and never broadcast to the room; it is rate-limited, which keeps it from
@@ -351,12 +358,13 @@ name, a roll number and a short state, as listed in Table 2.
 7.5 Lecture Transcription and Learning Guidance
 Lecture audio is transcribed close to real time with the open-source Whisper model (Radford et
 al., 2023) [17] running through faster-whisper. The transcript is split by topic, and a small open-
-source language model writes summaries, key points and likely examination questions. Slides
+source language model writes summaries, key points and likely examination questions. Slides
 and transcript chunks are embedded and stored in a vector database. A retrieval-augmented
 assistant (Lewis et al., 2020) [18] can then answer questions from that lecture’s material alone,
 citing the slide it drew on and saying that a topic was not covered when the retrieved context
 does not contain it.
- Figure 4: Lecture transcription, summarisation and retrieval-augmented assistance
+
+ Figure 4: Lecture transcription, summarisation and retrieval-augmented assistance
 
 7.6 System Architecture
 Figure 5 shows how the parts fit together. Student and instructor browsers talk to the real-time
@@ -370,13 +378,13 @@ the instructor dashboard; and only structured data, never raw video, reaches the
  Drowsiness and attention models Accuracy, precision, recall, F1-score, confusion matrix
  Screen compliance Precision, recall, F1-score, false-positive rate
  Alert engine Alert latency, false-alert rate, detection rate
+ Component Evaluation Metrics
  Delivery success rate and latency, and confirmation that no other
  Private nudge
  participant receives it
  Speech-to-text Word Error Rate (WER)
  Lecture assistant Answer correctness, groundedness, retrieval relevance
  On-device vs. server inference Latency, CPU and bandwidth usage per student
- Component Evaluation Metrics
  System and scalability End-to-end latency and resource usage at 10, 25, 50 and 100 users
  Table 3: Evaluation plan
 
@@ -397,23 +405,32 @@ is no paid licence, paid API or paid hosting anywhere in the stack.
  Layer Tools / Technologies (all free)
  Frontend Next.js, React, TypeScript, Tailwind CSS
  Backend Python, FastAPI, Pydantic
- WebRTC through LiveKit Cloud free tier (SFU with built-in TURN),
- Real-time
- WebSocket, Redis pub/sub
- Computer Vision MediaPipe (runs in the browser), OpenCV, PyTorch
- OCR / Similarity PaddleOCR, CLIP, Sentence-BERT (open-source models)
- faster-whisper (open-source Whisper, small/base model on CPU; no paid
- Speech-to-Text
- API)
- Small open-source LLM (e.g. Llama 3.2 3B or Qwen2.5 3B) served on
- LLM / RAG Hugging Face Spaces or locally through Ollama; Groq free tier for faster
- responses
- Database Supabase free tier (PostgreSQL with pgvector), Upstash free tier (Redis)
+ WebRTC through LiveKit (Cloud free tier for live demos; the open-source
+ Real-time LiveKit server self-hosted on the project VM for load tests), WebSocket, in-
+ process event bus (Redis pub/sub only if the API runs as several replicas)
+ MediaPipe Face Landmarker (runs in a Web Worker in the browser),
+ Computer Vision
+ OpenCV, PyTorch
+ Page Visibility API baseline; tesseract.js and MiniLM sentence embeddings
+ OCR / Similarity via transformers.js on-device; PaddleOCR, CLIP and Sentence-BERT server-
+ side for the client-vs-server comparison experiment
+ Groq free tier (Whisper large-v3, 8 hours of audio per day) for live lectures;
+ Speech-to-Text faster-whisper (open-source Whisper small/base on CPU) as the offline
+ fallback
+ Groq free tier (Llama) for live answers; small open-source LLM (Llama 3.2
+ LLM / RAG 3B or Qwen2.5 3B) through Ollama as the documented offline fallback;
+ pgvector for retrieval
+ Supabase free tier (PostgreSQL with pgvector); SQLite for local
+ Database
+ development
  Frontend Hosting & Vercel free Hobby plan with a free .vercel.app subdomain (e.g. intelliclass-
  Domain ai.vercel.app) and automatic HTTPS
- Hugging Face Spaces (free CPU, Docker) for the FastAPI backend and AI
- Backend / AI Hosting services; Supabase and Upstash hold all data because free Spaces storage is
- not permanent
+ Layer Tools / Technologies (all free)
+ Oracle Cloud Always Free virtual machine (Arm, 4 cores, 24 GB RAM)
+ running the FastAPI backend and AI services in Docker; Azure for Students
+ Backend / AI Hosting
+ credit from the GitHub Student Developer Pack as the fallback; Supabase
+ holds persistent data
  DevOps Docker, Docker Compose, Nginx, Let’s Encrypt (free SSL), GitHub Actions
  Testing PyTest, Vitest, Playwright, k6/Locust (load testing)
  Model Training Google Colab and Kaggle Notebooks (free GPU)
@@ -421,7 +438,13 @@ is no paid licence, paid API or paid hosting anywhere in the stack.
  Other
  education plan)
  Table 4: Software tools and technologies (zero-cost stack)
-8.2 Hardware
+
+The free-tier limits that matter are known in advance. LiveKit Cloud allows 5,000 participant-
+minutes a month, which one fifty-student lecture would largely consume, so load tests run
+against the self-hosted LiveKit server on the VM and the Cloud plan is kept for live
+demonstrations. Supabase pauses an idle free project after a week, so a scheduled health check
+keeps it awake during the semester.
+8.2 Hardware
  •
  The team’s existing laptops and PCs: Intel Core i5/Ryzen 5 or above, at least 8 GB of
  RAM (16 GB recommended for running the local LLM).
@@ -429,9 +452,9 @@ is no paid licence, paid API or paid hosting anywhere in the stack.
  Colab and Kaggle.
  • Built-in laptop webcams and microphones for testing, and team members’ own devices
  for the concurrent-user tests.
- • Free infrastructure for deployment: Vercel (frontend), Hugging Face Spaces (backend
- and AI services), LiveKit Cloud (audio/video) and Supabase/Upstash (data), so hosting
- costs nothing.
+ • Free infrastructure for deployment: Vercel (frontend), an Oracle Cloud Always Free
+ VM (backend, AI services and the self-hosted LiveKit server for load tests), LiveKit
+ Cloud (audio/video for demos) and Supabase (data), so hosting costs nothing.
 Estimated project cost: Rs. 0. Every tool and service listed above is free or open-source, so the
 project needs no budget.
 
@@ -453,11 +476,13 @@ project needs no budget.
  7 Alert Engine & Dashboard 5 weeks
  nudge
  8 Speech, NLP & RAG Assistant Whisper, summaries, questions, RAG 7 weeks
+ # Milestone Main Tasks Duration
  Service integration, deployment on
  9 Integration & Deployment 3 weeks
- Vercel and Hugging Face Spaces
+ Vercel and the project VM
  10 Testing & Evaluation Model metrics, load tests, user testing 5 weeks
  11 Documentation & Final Demo Final report, user manual, demonstration 4 weeks
  Table 5: Project milestones (several tasks overlap)
- Figure 6: Gantt chart of the project timeline (October 2026 – June 2027)
+
+ Figure 6: Gantt chart of the project timeline (October 2026 – June 2027)
 
