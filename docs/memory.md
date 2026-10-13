@@ -66,8 +66,8 @@
 |-----------|---------------|-----------|
 | Vision sampling rate | 5–10 fps | `VISION_FPS` |
 | Client PERCLOS window | 10 s (was 30 s; EAR is the fast signal) | `PERCLOS_WINDOW_MS` (frontend) |
-| Server smoothing | 2 packets | `FEATURE_SMOOTHING_PACKETS` |
-| Status hold before a badge changes | 2 s | `STATUS_HOLD_SECONDS` |
+| Server smoothing | 1 packet (the client averages a full second of frames) | `FEATURE_SMOOTHING_PACKETS` |
+| Status hold before a badge changes | 1 s | `STATUS_HOLD_SECONDS` |
 | EAR closed threshold | ~0.20 (calibrate per student) | `EAR_CLOSED_THRESHOLD` |
 | Drowsiness persistence (eyes closed by EAR, or PERCLOS high) | > 5 s | `DROWSY_MIN_SECONDS` |
 | Looking-away persistence | > 12 s (proposal example: 20 s; lowered after the first live test) | `LOOKAWAY_MIN_SECONDS` |
