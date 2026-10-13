@@ -37,6 +37,14 @@ def test_sleepy_from_perclos() -> None:
     assert 0.6 <= conds[0].confidence <= 1.0
 
 
+def test_sleepy_from_eyes_closed_now() -> None:
+    """EAR below the closed threshold counts at once; persistence is the alert engine's job."""
+    conds = CLF.classify(packet(ear=0.12, perclos=0.05))
+    assert [c.state for c in conds] == [State.SLEEPY]
+    assert conds[0].confidence >= 0.6
+    assert states(packet(ear=0.26, perclos=0.05)) == set()
+
+
 def test_looking_away_from_head_pose() -> None:
     assert states(packet(head_yaw=45.0)) == {State.LOOKING_AWAY}
     assert states(packet(head_pitch=-40.0)) == {State.LOOKING_AWAY}
