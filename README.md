@@ -31,6 +31,22 @@ pnpm dev                                           # http://localhost:3000
 Demo accounts (password `Demo1234!`): instructor `ayesha@demo.edu`, students `hamza@demo.edu` … see `backend/scripts/seed.py`.
 To populate the dashboard without six webcams: `uv run python -m scripts.simulate_students` after starting a class. Full walkthrough in `docs/demo.md`.
 
+## Live video (optional)
+
+Attention monitoring works without it. To enable the instructor's live audio/video, create a free project at cloud.livekit.io, create an API key, and set in `backend/.env`:
+
+```
+LIVEKIT_URL=wss://<project>.livekit.cloud
+LIVEKIT_API_KEY=...
+LIVEKIT_API_SECRET=...
+```
+
+Restart the backend. Instructors then publish camera and microphone; students publish only their microphone, since their camera is consumed by the on-device vision worker and never transmitted. The free plan allows 5,000 participant-minutes a month, so load tests use a self-hosted LiveKit server instead.
+
+## Branches
+
+`main` is demo-ready, `develop` is integration, features live on `feature/<area>-<name>` and are merged by pull request after review (see `docs/rules.md`). Open feature branches are listed in `docs/progress.md`.
+
 ## Quality gates
 
 Backend: `uv run ruff check . && uv run black --check . && uv run mypy && uv run pytest -q`

@@ -2,7 +2,7 @@
 
 **Project:** IntelliClass AI — Keeping Students Focused Online
 **Repo:** https://github.com/MuSaXheikh/IntelliClass-AI (branches `main` and `develop`)
-**Last updated:** 9 October 2026
+**Last updated:** 13 October 2026
 
 This file explains, in plain language, what has been built so far, what has been verified, what is not done yet, and how the work maps to the proposal's objectives. For task-level status see `tasks.md`; for the decisions behind the design see `memory.md`.
 
@@ -60,7 +60,16 @@ The project went from documents to a **working end-to-end system in one day**. A
 | Typed WebSocket client with heartbeat and reconnect backoff | Done |
 | Offline: model and WASM served from `public/`, system fonts, no CDN | Done |
 
-### 2.4 Measured so far (`docs/evaluation/`)
+### 2.4 Work on feature branches (built 13 October, not merged yet)
+
+| Branch | What it adds | Status |
+|--------|--------------|--------|
+| `feature/fe-report-pages` | Backend: `GET /classes/{id}/sessions`, per-minute attention timeline, attendance-aware averages. Frontend: class report page (stat tiles, attention timeline with hover and table view, alerts-by-type bars, per-student time-by-state bars), reports index, private My summary page; End class opens the report | Backend 26 tests, frontend 37 tests, lint/type-check/build green; needs a visual review in the browser |
+| `feature/livekit-video` | Instructor receives a LiveKit token that may publish camera, mic and screen; students keep microphone-only tokens; credentials verified against LiveKit Cloud | 29 backend tests green; two-browser call still to be tried |
+
+The proposal was resubmitted on 13 October (`docs/intelli-class-ai-perposal.pdf`) and passed the supervisor's Turnitin threshold.
+
+### 2.5 Measured so far (`docs/evaluation/`)
 | Measure | Result |
 |---------|--------|
 | Student visible on dashboard after connecting | 1.2 s |
@@ -75,12 +84,12 @@ The project went from documents to a **working end-to-end system in one day**. A
 | Area | Task IDs | Note |
 |------|----------|------|
 | Real-browser verification of the webcam pipeline and per-student EAR calibration | FE-11 | The dev laptop has no camera visible to Linux (see §5) |
-| Live audio/video via LiveKit (tokens are implemented; needs free LiveKit keys) | FE-06 | Optional for the demo |
+| Live audio/video: a real two-browser call has not been exercised yet (tokens verified against LiveKit Cloud on 13 Oct) | FE-06 | On branch `feature/livekit-video` |
 | Screen-content similarity (on-device OCR vs. slide text) | FE-12, BE-09 | Visibility baseline is in place |
 | Learned drowsiness classifier and baseline-vs-learned comparison | AI-02, AI-03, BE-14 | Needs the consented recorded dataset (AI-01) |
 | Threshold tuning on a validation set | AI-04 | Current values are documented placeholders |
 | Speech-to-text, summaries, RAG assistant | AI-06 … AI-09, FE-16 | Phase 5 |
-| Post-class report page and My Summary page in the UI | FE-14, FE-15 | API exists; UI links are placeholders |
+| Post-class report, reports index and My Summary pages: built and gate-green, awaiting review and merge | FE-14, FE-15 | On branch `feature/fe-report-pages` |
 | PostgreSQL/Supabase + VM hosting, CD | DB-02, DEP-03 … DEP-07 | HF Spaces free Docker was withdrawn in July 2026; target is a free VM |
 | Load tests at 10/25/50/100 users | TST-09 | Simulator can be the basis |
 | Playwright E2E, usability sessions, final docs | TST-03, TST-10, DOC-* | — |
@@ -103,6 +112,7 @@ Logins: `ayesha@demo.edu` (instructor), `hamza@demo.edu` … (students), passwor
 
 ## 5. Known issues / observations
 
+- **LiveKit credentials** live only in `backend/.env` (git-ignored). A free-plan project has 5,000 participant-minutes a month; end sessions after testing.
 - **No camera on the dev laptop.** Linux shows no `/dev/video*` device and the `uvcvideo` driver is not loaded on the Dell Latitude 7400 used for development, so the browser cannot open a webcam there. The consent gate now explains the exact reason (blocked permission, no device, device busy, insecure origin). Check the BIOS camera setting and reboot, or test on a laptop with a working camera.
 - **Smoothing latency.** The 3-packet smoothing adds ~2 s before a condition is seen. To be tuned with AI-04.
 - **Team docs mismatch.** Proposal lists four members and BS CS; the roadmap assigns three roles and says BS IT. To be aligned by the team.
