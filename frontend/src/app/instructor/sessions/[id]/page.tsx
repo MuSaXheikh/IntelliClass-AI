@@ -136,8 +136,8 @@ export default function InstructorLiveRoomPage() {
   const endClass = async () => {
     setEnding(true);
     try {
-      const ended = await api.post<Session>(`/sessions/${sessionId}/end`);
-      router.replace(`/instructor/classes/${ended.class_id}`);
+      await api.post<Session>(`/sessions/${sessionId}/end`);
+      router.replace(`/instructor/sessions/${sessionId}/report`);
     } catch (caught) {
       toast.push({ kind: "error", title: "Could not end class", description: describe(caught) });
       setEnding(false);

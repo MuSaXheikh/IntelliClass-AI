@@ -91,8 +91,8 @@ Status: `todo` · `doing` · `done` · `blocked`
 | AI-08 | Chunk and embed slides + transcript into pgvector | M3/M2 | todo |
 | AI-09 | RAG assistant: retrieval, grounded answer, slide citation, "not covered" | M3 | todo |
 | TST-08 | WER, answer correctness, groundedness evaluation | M3 | todo |
-| FE-14 | Post-class report page with charts | M1 | todo |
-| FE-15 | Student private "My Summary" | M1 | todo |
+| FE-14 | Post-class report page with charts | M1 | doing (branch `feature/fe-report-pages`) |
+| FE-15 | Student private "My Summary" | M1 | doing (branch `feature/fe-report-pages`) |
 | FE-16 | Notes + RAG assistant UI | M1 | todo |
 
 ## Phase 6: Integration & Deployment (weeks 31–34)

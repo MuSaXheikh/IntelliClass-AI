@@ -39,7 +39,9 @@ def my_summary(
         rows.append(
             SessionSummaryRow(
                 session_id=session.id,
+                class_id=cls.id,
                 class_name=cls.name,
+                status=session.status,
                 started_at=session.started_at,
                 attention_pct=stats.attention_pct,
                 seconds_by_state=stats.seconds_by_state,

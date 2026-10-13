@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -92,8 +93,11 @@ export default function StudentLiveRoomPage() {
       {nudge && <NudgeBanner nudge={nudge} onReply={reply} />}
       {ended && (
         <div className="rounded-card border border-line bg-surface p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-          The class has ended. Your private summary will appear under <strong>My summary</strong> in
-          a later release.
+          The class has ended. Your private attention and participation summary is under{" "}
+          <Link href="/student/summary" className="text-primary underline dark:text-green-300">
+            My summary
+          </Link>
+          .
         </div>
       )}
 

@@ -15,23 +15,34 @@ class StudentRow(BaseModel):
     nudges: int
 
 
+class TimelinePoint(BaseModel):
+    minute: int
+    attentive_pct: float
+    students: int
+
+
 class ReportOut(BaseModel):
     session_id: str
+    class_id: str
     started_at: datetime
     ended_at: datetime | None
     duration_s: float
     students: int
+    attended: int
     avg_attention_pct: float
     alerts_total: int
     alerts_by_type: dict[str, int]
     nudges_total: int
     justified_alert_rate: float | None
     per_student: list[StudentRow]
+    timeline: list[TimelinePoint]
 
 
 class SessionSummaryRow(BaseModel):
     session_id: str
+    class_id: str
     class_name: str
+    status: str
     started_at: datetime
     attention_pct: float
     seconds_by_state: dict[str, float]

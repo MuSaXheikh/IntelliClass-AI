@@ -163,6 +163,19 @@ def slide_image(
     return FileResponse(slide.image_path, media_type="image/png")
 
 
+@router.get("/{class_id}/sessions", response_model=list[SessionOut])
+def list_sessions(
+    cls: Class = Depends(get_participant_class), db: Session = Depends(get_db)
+) -> list[SessionOut]:
+    """Past and live sessions of a class, newest first (for report links)."""
+    stmt = (
+        select(LiveSession)
+        .where(LiveSession.class_id == cls.id)
+        .order_by(LiveSession.started_at.desc())
+    )
+    return [session_out(db, s) for s in db.scalars(stmt)]
+
+
 @router.post("/{class_id}/sessions", response_model=SessionOut, status_code=status.HTTP_201_CREATED)
 def start_session(
     cls: Class = Depends(get_owned_class),

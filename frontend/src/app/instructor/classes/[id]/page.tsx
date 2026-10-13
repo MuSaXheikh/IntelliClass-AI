@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { SlideImage } from "@/components/classroom/SlideImage";
@@ -9,6 +10,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { TextArea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { api, ApiError } from "@/lib/api";
+import { formatDateTime } from "@/lib/report";
 import type {
   ClassSummary,
   EnrolResponse,
@@ -25,6 +27,7 @@ export default function ClassDetailPage() {
   const [cls, setCls] = useState<ClassSummary | null>(null);
   const [students, setStudents] = useState<User[]>([]);
   const [slides, setSlides] = useState<SlideInfo[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [rollText, setRollText] = useState("");
   const [busy, setBusy] = useState<"enrol" | "upload" | "start" | null>(null);
 
@@ -34,11 +37,13 @@ export default function ClassDetailPage() {
         api.get<ClassSummary>(`/classes/${id}`),
         api.get<User[]>(`/classes/${id}/students`),
         api.get<SlideInfo[]>(`/classes/${id}/slides`),
+        api.get<Session[]>(`/classes/${id}/sessions`),
       ])
-        .then(([detail, roster, deck]) => {
+        .then(([detail, roster, deck, held]) => {
           setCls(detail);
           setStudents(roster);
           setSlides(deck);
+          setSessions(held);
         })
         .catch((caught: unknown) => {
           toast.push({
@@ -184,6 +189,32 @@ export default function ClassDetailPage() {
           </ul>
         </Card>
       </div>
+
+      <Card>
+        <h2 className="mb-2 text-lg font-semibold">Sessions ({sessions.length})</h2>
+        {sessions.length === 0 ? (
+          <p className="text-sm text-ink-muted dark:text-slate-400">No class held yet.</p>
+        ) : (
+          <ul className="divide-y divide-line text-sm dark:divide-slate-700">
+            {sessions.map((s) => (
+              <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span>
+                  {formatDateTime(s.started_at)}
+                  <span className="ml-2 text-xs text-ink-muted dark:text-slate-400">
+                    {s.status === "live" ? "● live" : "ended"}
+                  </span>
+                </span>
+                <Link
+                  href={`/instructor/sessions/${s.id}/report`}
+                  className="text-primary underline-offset-2 hover:underline dark:text-green-300"
+                >
+                  {s.status === "live" ? "Report so far" : "Open report"}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   );
 }
