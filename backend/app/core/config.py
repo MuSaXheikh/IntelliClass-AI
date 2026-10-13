@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     head_yaw_limit_deg: float = 30.0
     head_pitch_limit_deg: float = 25.0
     feature_smoothing_packets: int = 3
+    vision_debug_log: bool = False  # log smoothed features per packet (calibration sessions only)
 
     # Persistence before an alert may be raised (seconds)
     drowsy_min_seconds: float = 5.0
