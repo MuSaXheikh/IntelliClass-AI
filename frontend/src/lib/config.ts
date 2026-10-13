@@ -18,8 +18,8 @@ export const VISION_FPS = 8;
 export const VISION_PACKET_INTERVAL_MS = 1000;
 /** Eye Aspect Ratio below which the eye is treated as closed (calibrate per student later). */
 export const EAR_CLOSED_THRESHOLD = 0.2;
-/** PERCLOS window (ms). */
-export const PERCLOS_WINDOW_MS = 30_000;
+/** PERCLOS window (ms). Short enough that a closure shows within seconds; EAR is the fast signal. */
+export const PERCLOS_WINDOW_MS = 10_000;
 /** Blink-rate window (ms). */
 export const BLINK_WINDOW_MS = 60_000;
 /** A blink is a closed run of this many frames or fewer; longer runs are closures. */

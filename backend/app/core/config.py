@@ -32,17 +32,17 @@ class Settings(BaseSettings):
     landmark_conf_min: float = 0.50
     head_yaw_limit_deg: float = 30.0
     head_pitch_limit_deg: float = 25.0
-    feature_smoothing_packets: int = 3
+    feature_smoothing_packets: int = 2
     vision_debug_log: bool = False  # log smoothed features per packet (calibration sessions only)
 
     # Persistence before an alert may be raised (seconds)
     drowsy_min_seconds: float = 5.0
-    lookaway_min_seconds: float = 20.0
-    noface_min_seconds: float = 10.0
-    camera_off_min_seconds: float = 10.0
-    screen_grace_seconds: float = 20.0
+    lookaway_min_seconds: float = 12.0
+    noface_min_seconds: float = 8.0
+    camera_off_min_seconds: float = 8.0
+    screen_grace_seconds: float = 12.0
     connection_timeout_seconds: float = 8.0
-    status_hold_seconds: float = 3.0  # a condition must last this long before the badge changes
+    status_hold_seconds: float = 2.0  # a condition must last this long before the badge changes
 
     # Alert engine
     alert_confidence_threshold: float = 0.60
