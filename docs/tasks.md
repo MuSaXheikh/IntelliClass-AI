@@ -34,7 +34,7 @@ Status: `todo` · `doing` · `done` · `blocked`
 | FE-03 | Instructor class manager: create class, enrol by roll number, upload slides | M1 | done |
 | FE-04 | Student home and join flow | M1 | done |
 | FE-05 | Consent gate: plain-language notice + camera/mic/screen permissions | M1 | done |
-| FE-06 | LiveKit video stage (instructor publishes; students subscribe only) | M1 | todo |
+| FE-06 | LiveKit video stage (instructor publishes; students subscribe only) | M1 | doing (branch `feature/livekit-video`; tokens verified, call untested) |
 | FE-07 | Slide viewer + instructor slide controller synced via `slide.changed` | M1 | done |
 | FE-08 | WebSocket provider/hook with auto-reconnect | M1 | done |
 | BE-01 | Auth: register/login, hashed passwords, JWT | M2 | done |
@@ -91,8 +91,8 @@ Status: `todo` · `doing` · `done` · `blocked`
 | AI-08 | Chunk and embed slides + transcript into pgvector | M3/M2 | todo |
 | AI-09 | RAG assistant: retrieval, grounded answer, slide citation, "not covered" | M3 | todo |
 | TST-08 | WER, answer correctness, groundedness evaluation | M3 | todo |
-| FE-14 | Post-class report page with charts | M1 | todo |
-| FE-15 | Student private "My Summary" | M1 | todo |
+| FE-14 | Post-class report page with charts | M1 | doing (branch `feature/fe-report-pages`, gate-green) |
+| FE-15 | Student private "My Summary" | M1 | doing (branch `feature/fe-report-pages`, gate-green) |
 | FE-16 | Notes + RAG assistant UI | M1 | todo |
 
 ## Phase 6: Integration & Deployment (weeks 31–34)

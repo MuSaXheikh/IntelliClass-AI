@@ -1,13 +1,16 @@
 /** All client-side constants in one place (rules.md §1.1: thresholds live in config). */
 
-const env = (key: string, fallback: string): string => {
-  const value = process.env[key];
-  return value && value.length > 0 ? value : fallback;
-};
+import { resolveUrls } from "@/lib/urls";
 
-export const API_URL = env("NEXT_PUBLIC_API_URL", "http://localhost:8000/api/v1");
-export const WS_URL = env("NEXT_PUBLIC_WS_URL", "ws://localhost:8000/ws");
-export const LIVEKIT_URL = env("NEXT_PUBLIC_LIVEKIT_URL", "");
+// NEXT_PUBLIC_* must be read with static property access; Next.js inlines them at build time
+// only in that form (a dynamic process.env[key] lookup silently returns undefined).
+const resolved = resolveUrls(
+  { api: process.env.NEXT_PUBLIC_API_URL, ws: process.env.NEXT_PUBLIC_WS_URL },
+  typeof window === "undefined" ? null : window.location,
+);
+export const API_URL = resolved.api;
+export const WS_URL = resolved.ws;
+export const LIVEKIT_URL = process.env.NEXT_PUBLIC_LIVEKIT_URL ?? "";
 
 /** Vision sampling rate inside the worker (frames analysed per second). */
 export const VISION_FPS = 8;
