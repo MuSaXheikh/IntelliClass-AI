@@ -146,6 +146,19 @@ async def _on_features(ctx: SocketContext, payload: dict[str, Any]) -> None:
         await ctx.websocket.send_json(error_message("BAD_FEATURES", exc.errors()[0]["msg"]))
         return
     result = ctx.live.handle_features(ctx.session.id, ctx.user.id, packet)
+    if ctx.settings.vision_debug_log:
+        logger.info(
+            "features %s ear=%s perclos=%s yaw=%s pitch=%s face=%s conf=%s visible=%s focused=%s",
+            ctx.user.roll_no,
+            packet.ear,
+            packet.perclos,
+            packet.head_yaw,
+            packet.head_pitch,
+            packet.face_present,
+            packet.landmark_conf,
+            packet.page_visible,
+            packet.window_focused,
+        )
     if result.status_change is not None:
         record_status_change(ctx.db, ctx.session.id, result.status_change)
         ctx.db.commit()

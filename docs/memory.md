@@ -188,6 +188,7 @@ NEXT_PUBLIC_LIVEKIT_URL=wss://<project>.livekit.cloud
 | Date | Update |
 |------|--------|
 | 2026-10 | Proposal approved; project docs generated; setup phase beginning |
+| 2026-10-13 (pm) | Two feature branches pushed, not merged: `feature/fe-report-pages` (report/summary pages, sessions endpoint, timeline) and `feature/livekit-video` (instructor publish token; LiveKit Cloud project `intelliclass-ai-xgvhr235`, credentials in `backend/.env` only). |
 | 2026-10-13 | Proposal resubmitted as `docs/intelli-class-ai-perposal.pdf` (Turnitin AI score under the 20% threshold; the earlier rebuild scored 32%). Content aligned with D13–D17. Earlier proposal versions remain in git history only. |
 | 2026-10-09 (pm) | **Vertical slice working end to end** on localhost and pushed to `github.com/MuSaXheikh/IntelliClass-AI`: auth, classes, enrolment, PDF slides, consent-gated join, WS gateway, rule-based classifier, alert engine (persistence/cooldown/grouping), private nudge + audit, reports; Next.js instructor/student rooms with the on-device MediaPipe worker. Runs with **no internet** (model + WASM + Swagger vendored, system fonts). Backend 25 tests, frontend 26 tests, CI green. Demo: `docs/demo.md`. |
 | 2026-10-09 | Monorepo scaffolded (backend FastAPI + frontend Next.js, CI, compose). API/WS contract v1 frozen in Section 7. Decisions D13–D17 added after free-tier review: HF Spaces free Docker is gone, LiveKit free = 5,000 participant-min/month, Upstash free = 500k commands/month. `tasks.md` created. |

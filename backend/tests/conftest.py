@@ -22,6 +22,11 @@ os.environ.update(
         "CONNECTION_TIMEOUT_SECONDS": "1",
         "NUDGE_RATE_LIMIT": "2",
         "FEATURE_SMOOTHING_PACKETS": "1",
+        # Tests must not pick up a developer's real LiveKit credentials from backend/.env
+        "LIVEKIT_URL": "",
+        "LIVEKIT_API_KEY": "",
+        "LIVEKIT_API_SECRET": "",
+        "VISION_DEBUG_LOG": "false",
     }
 )
 
