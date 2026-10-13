@@ -52,7 +52,7 @@ Status: `todo` · `doing` · `done` · `blocked`
 
 | ID | Task | Owner | Status |
 |----|------|-------|--------|
-| FE-11 | MediaPipe Face Landmarker in a Web Worker at 5–10 fps, driven by a worker timer (not rAF) so it survives background tabs; frames via MediaStreamTrackProcessor | M1 | done (needs real-browser verification + per-student EAR calibration) |
+| FE-11 | MediaPipe Face Landmarker in a Web Worker at 5–10 fps, driven by a worker timer (not rAF) so it survives background tabs; frames via MediaStreamTrackProcessor | M1 | done (verified on an Android phone camera 2026-10-14; per-student EAR/pitch calibration pending, AI-04) |
 | FE-17 | Uncertain / connection-problem UX with hints | M1 | todo |
 | FE-09 | Instructor live dashboard: student list, status badges, class strip | M1 | done |
 | FE-19 | Page Visibility + window focus signal in the 1 Hz feature packet (baseline wrong-screen) | M1 | done |
