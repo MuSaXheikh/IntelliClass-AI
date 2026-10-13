@@ -65,14 +65,17 @@
 | Parameter | Initial value | Config key |
 |-----------|---------------|-----------|
 | Vision sampling rate | 5–10 fps | `VISION_FPS` |
+| Client PERCLOS window | 10 s (was 30 s; EAR is the fast signal) | `PERCLOS_WINDOW_MS` (frontend) |
+| Server smoothing | 2 packets | `FEATURE_SMOOTHING_PACKETS` |
+| Status hold before a badge changes | 2 s | `STATUS_HOLD_SECONDS` |
 | EAR closed threshold | ~0.20 (calibrate per student) | `EAR_CLOSED_THRESHOLD` |
-| Drowsiness persistence | > 5 s | `DROWSY_MIN_SECONDS` |
-| Looking-away persistence | > 20 s | `LOOKAWAY_MIN_SECONDS` |
-| No-face persistence | ~10 s (tune) | `NOFACE_MIN_SECONDS` |
+| Drowsiness persistence (eyes closed by EAR, or PERCLOS high) | > 5 s | `DROWSY_MIN_SECONDS` |
+| Looking-away persistence | > 12 s (proposal example: 20 s; lowered after the first live test) | `LOOKAWAY_MIN_SECONDS` |
+| No-face persistence | ~8 s (tune) | `NOFACE_MIN_SECONDS` |
 | Alert cooldown | ~60 s per student per type (tune) | `ALERT_COOLDOWN_SECONDS` |
 | Screen sample interval | every ~3–5 s | `SCREEN_SAMPLE_SECONDS` |
 | Screen similarity threshold | tune | `SCREEN_SIM_THRESHOLD` |
-| Screen grace period | ~15–30 s (tune) | `SCREEN_GRACE_SECONDS` |
+| Screen grace period | ~12 s (tune) | `SCREEN_GRACE_SECONDS` |
 | Nudge rate limit | e.g. 3 per student per 10 min | `NUDGE_RATE_LIMIT` |
 
 ## 6. Status Signals (Enum)

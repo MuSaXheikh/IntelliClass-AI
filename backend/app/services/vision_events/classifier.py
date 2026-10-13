@@ -26,10 +26,12 @@ class VisionThresholds:
     landmark_conf_min: float
     head_yaw_limit: float
     head_pitch_limit: float
+    ear_closed: float = 0.20
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "VisionThresholds":
         return cls(
+            ear_closed=settings.ear_closed_threshold,
             perclos_sleepy=settings.perclos_sleepy_threshold,
             landmark_conf_min=settings.landmark_conf_min,
             head_yaw_limit=settings.head_yaw_limit_deg,
@@ -73,13 +75,27 @@ class RuleBasedClassifier:
 
     def _face_conditions(self, f: VisionFeatures, conf: float) -> list[Condition]:
         found: list[Condition] = []
-        if f.perclos is not None and f.perclos >= self.t.perclos_sleepy:
-            excess = (f.perclos - self.t.perclos_sleepy) / max(1e-6, 1.0 - self.t.perclos_sleepy)
-            found.append(Condition(State.SLEEPY, _clamp(0.6 + 0.4 * excess) * conf))
+        sleepy = self._sleepy_confidence(f)
+        if sleepy > 0:
+            found.append(Condition(State.SLEEPY, sleepy * conf))
         away = self._lookaway_excess(f)
         if away > 0:
             found.append(Condition(State.LOOKING_AWAY, _clamp(0.6 + 0.4 * away) * conf))
         return found
+
+    def _sleepy_confidence(self, f: VisionFeatures) -> float:
+        """Eyes closed right now (EAR) or closed most of the window (PERCLOS); 0 when neither.
+
+        EAR reacts within a second, so the alert engine's persistence window alone decides
+        how long the eyes must stay shut. PERCLOS catches slow, intermittent closures.
+        """
+        best = 0.0
+        if f.ear is not None and f.ear < self.t.ear_closed:
+            best = _clamp(0.6 + 0.4 * (self.t.ear_closed - f.ear) / max(1e-6, self.t.ear_closed))
+        if f.perclos is not None and f.perclos >= self.t.perclos_sleepy:
+            excess = (f.perclos - self.t.perclos_sleepy) / max(1e-6, 1.0 - self.t.perclos_sleepy)
+            best = max(best, _clamp(0.6 + 0.4 * excess))
+        return best
 
     def _lookaway_excess(self, f: VisionFeatures) -> float:
         """How far head pose exceeds the limits, as a fraction of the limit (0 = within)."""
