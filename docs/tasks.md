@@ -1,7 +1,7 @@
 # tasks.md: Task Register
 
-Task IDs referenced from `team_task_roadmap.md`, `rules.md` and PRs. Owners: M1 Frontend, M2 Backend, M3 DevOps/QA/AI.
-The proposal lists four members while the roadmap assigns three roles; the fourth member's allocation is pending (see note at the end).
+Task IDs referenced from `team_task_roadmap.md`, `rules.md` and PRs. Owner codes: M1 Frontend (Ahmad), M2 Backend (Musa), M3 DevOps/QA/AI (split: DevOps/QA → Musa, AI → Faraz), M4 Data/Docs/PM (Sohaib).
+The per-person split, including shared tasks and handshakes, is in `task_split.md` (agreed 2026-10-14).
 
 Status: `todo` · `doing` · `done` · `blocked`
 
@@ -128,6 +128,15 @@ Status: `todo` · `doing` · `done` · `blocked`
 | DOC-04 | Final project report | All | todo |
 | DOC-05 | Demo script, demo data, final presentation | All | todo |
 
+## Coordination, data collection & manual QA (cross-phase)
+
+| ID | Task | Owner | Status |
+|----|------|-------|--------|
+| PM-01 | Weekly sync minutes, `progress.md` updates, status-log entries in `memory.md` | M4 | todo |
+| PM-02 | Schedule and prepare the 2-week sprint demos for the supervisor; collect feedback | M4 | todo |
+| AI-11 | Participant recruitment, recording sessions and clip labelling spreadsheet for AI-02/AI-03 | M4 (spec: M3) | todo |
+| TST-11 | Manual acceptance test each sprint on a real phone and laptop; bugs filed as GitHub issues | M4 | todo |
+
 ## Open team decisions
-1. Fourth member (proposal lists Muhammad Musa, Muhammad Ahmad, Faraz Hassan, Sohaib Khan): assign a role or split M3's AI work into a fourth "ML & Lecture Intelligence" role.
+1. ~~Fourth member allocation~~ Resolved 2026-10-14: see `task_split.md` (Musa backend + DevOps, Ahmad frontend, Faraz ML, Sohaib data/docs/PM).
 2. Programme name: proposal says BS Computer Science; docs say BS IT. Align.
