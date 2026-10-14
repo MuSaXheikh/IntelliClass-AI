@@ -6,6 +6,8 @@
 
 ---
 
+> **2026-10-14:** the team has four members. The per-person assignment (Musa, Ahmad, Faraz, Sohaib) is in `task_split.md`; the three roles below are kept as the original plan and task-ID reference.
+
 ## 1. How to Use This Roadmap
 
 - Each member follows their own **step-by-step list** from Phase 1 to Final Launch.
