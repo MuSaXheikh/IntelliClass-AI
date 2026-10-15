@@ -5,7 +5,8 @@ What this demo shows: an instructor starts a class, students join after consent,
 ## 0. Prepare while you still have internet (once)
 
 ```bash
-cd backend  && uv sync && cp .env.example .env && uv run python -m scripts.seed
+cd backend && supabase start && uv sync && cp .env.example .env   # then set DATABASE_URL and JWT_SECRET in .env
+uv run alembic upgrade head && uv run python -m scripts.seed --instructor-email you@uni.edu --instructor-name "Your Name" --roster roster.csv
 cd ../frontend && source ~/.nvm/nvm.sh && nvm use 22 && pnpm install && cp .env.local.example .env.local && pnpm build
 ```
 
@@ -32,13 +33,13 @@ Open http://localhost:3000 (API docs at http://localhost:8000/docs). For two log
 
 ## 2. Instructor flow (browser window A)
 
-1. Log in as `ayesha@demo.edu` / `Demo1234!`.
+1. Log in as the instructor you seeded (the seed printed the password once).
 2. Open the class **Computer Vision 101** (6 students enrolled, 6 slides already uploaded).
 3. Click **Start Live Class**. Show the empty roster and the slide stage. Use Prev/Next; mention every student's viewer follows.
 
 ## 3. Student flow (browser window B, or a laptop)
 
-1. Log in as `hamza@demo.edu` / `Demo1234!`, click **Join**.
+1. Log in as a student from your roster, click **Join**.
 2. Show the **consent gate**: what is analysed, "analysed ON YOUR DEVICE", test camera, Allow & Join.
 3. In window A the student appears as **Attentive**. Point out the chip "Camera analysis: on-device ✔" in window B.
 4. Close your eyes for ~6 seconds. Window A: badge turns **Sleepy** after a few seconds, then an **alert** appears in the ranked panel. A blink or a 2-second glance does nothing.
@@ -47,7 +48,7 @@ Open http://localhost:3000 (API docs at http://localhost:8000/docs). For two log
 ## 4. Fill the room without webcams (terminal 3)
 
 ```bash
-cd backend && uv run python -m scripts.simulate_students --minutes 3
+cd backend && uv run python -m scripts.simulate_students --roster roster.csv --password <seed password> --minutes 3
 ```
 
 Six scripted students connect: one falls asleep at 20 s, one looks away at 40 s, one switches tab at 30 s, one turns the camera off at 50 s, one drops the connection at 60 s. The dashboard ranks alerts by severity and groups repeats.

@@ -10,7 +10,7 @@ os.environ.update(
     {
         "DATABASE_URL": f"sqlite:///{_TMP / 'test.db'}",
         "STORAGE_DIR": str(_TMP / "storage"),
-        "JWT_SECRET": "test-secret-not-for-production",
+        "JWT_SECRET": "test-only-secret-0123456789abcdef0123456789abcdef",
         "AUTO_CREATE_TABLES": "true",
         "STATUS_HOLD_SECONDS": "0.1",
         "DROWSY_MIN_SECONDS": "0.3",

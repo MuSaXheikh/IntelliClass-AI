@@ -1,8 +1,9 @@
 """Simulate N demo students streaming vision features (for demos and load checks).
 
-The instructor starts the class in the UI first. Then, from backend/:
+The instructor starts the class in the UI first. Then, from backend/, using the same roster
+and password you gave scripts.seed (or SEED_ROSTER / SEED_PASSWORD in the environment):
 
-    uv run python -m scripts.simulate_students --api http://localhost:8000 --minutes 5
+    uv run python -m scripts.simulate_students --roster roster.csv --password ... --minutes 5
 
 Each simulated student follows a script so the dashboard shows every signal:
   #1 falls asleep at 20 s, #2 looks away at 40 s for 30 s, #3 switches tab at 30 s,
@@ -14,15 +15,17 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import random
 import sys
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import httpx
 import websockets
 
-from scripts.seed import PASSWORD, STUDENTS
+from scripts.seed import load_roster
 
 logger = logging.getLogger("simulate")
 
@@ -93,8 +96,8 @@ SCRIPTS: list[Script] = [
 ]
 
 
-async def _login(client: httpx.AsyncClient, email: str) -> str:
-    res = await client.post("/api/v1/auth/login", json={"email": email, "password": PASSWORD})
+async def _login(client: httpx.AsyncClient, email: str, password: str) -> str:
+    res = await client.post("/api/v1/auth/login", json={"email": email, "password": password})
     res.raise_for_status()
     return str(res.json()["access_token"])
 
@@ -108,9 +111,11 @@ async def _live_session_id(client: httpx.AsyncClient, token: str) -> str | None:
     return None
 
 
-async def _run_student(api: str, ws_base: str, email: str, script: Script, minutes: float) -> None:
+async def _run_student(
+    api: str, ws_base: str, email: str, password: str, script: Script, minutes: float
+) -> None:
     async with httpx.AsyncClient(base_url=api, timeout=20) as client:
-        token = await _login(client, email)
+        token = await _login(client, email, password)
         session_id = await _live_session_id(client, token)
         if session_id is None:
             logger.error("%s: no live session; start the class in the instructor UI first", email)
@@ -135,9 +140,11 @@ async def _run_student(api: str, ws_base: str, email: str, script: Script, minut
 
 async def main_async(args: argparse.Namespace) -> int:
     ws_base = args.api.replace("http://", "ws://").replace("https://", "wss://")
-    emails = [e for e, _, _ in STUDENTS][: args.students]
+    emails = [s.email for s in load_roster(Path(args.roster))][: args.students]
     tasks = [
-        _run_student(args.api, ws_base, email, SCRIPTS[i % len(SCRIPTS)], args.minutes)
+        _run_student(
+            args.api, ws_base, email, args.password, SCRIPTS[i % len(SCRIPTS)], args.minutes
+        )
         for i, email in enumerate(emails)
     ]
     await asyncio.gather(*tasks, return_exceptions=False)
@@ -149,9 +156,13 @@ def main() -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--api", default="http://localhost:8000")
-    parser.add_argument("--students", type=int, default=len(STUDENTS))
+    parser.add_argument("--roster", default=os.environ.get("SEED_ROSTER"), help="CSV from seed")
+    parser.add_argument("--password", default=os.environ.get("SEED_PASSWORD"))
+    parser.add_argument("--students", type=int, default=None, help="how many (default: all)")
     parser.add_argument("--minutes", type=float, default=5)
     args = parser.parse_args()
+    if not args.roster or not args.password:
+        parser.error("--roster and --password are required (or SEED_ROSTER / SEED_PASSWORD)")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     return asyncio.run(main_async(args))
 
