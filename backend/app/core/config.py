@@ -1,6 +1,7 @@
 """Application settings. Every tunable threshold lives here, never hard-coded."""
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,7 +21,12 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 120
     allowed_origins: str = "http://localhost:3000"
+    # Slide images: local files under storage_dir, or a private Supabase Storage bucket
+    storage_backend: Literal["local", "supabase"] = "local"
     storage_dir: str = "./storage"
+    supabase_url: str | None = None  # API URL (http://127.0.0.1:54321 locally)
+    supabase_service_key: str | None = None  # service-role key, server-side only
+    supabase_bucket: str = "slides"
 
     livekit_url: str | None = None
     livekit_api_key: str | None = None

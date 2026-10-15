@@ -21,6 +21,7 @@ from app.db.base import Base
 from app.db.session import engine
 from app.services.live.manager import LiveSessionManager
 from app.services.nudge.service import NudgeService
+from app.services.storage import get_storage
 from app.ws.bus import InProcessBus
 from app.ws.connections import ConnectionManager
 from app.ws.gateway import router as ws_router
@@ -33,11 +34,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     """Build the app with its in-process services attached to app.state."""
     settings = settings or get_settings()
     configure_logging()
+    storage = get_storage(settings)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if settings.auto_create_tables:
             Base.metadata.create_all(bind=engine)
+        storage.ensure_ready()
         task = asyncio.create_task(watchdog_loop(app.state.live, app.state.connections))
         logger.info("%s started (%s)", settings.app_name, settings.environment)
         try:
@@ -49,6 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan, docs_url=None)
     app.state.settings = settings
+    app.state.storage = storage
     app.state.connections = ConnectionManager()
     app.state.bus = InProcessBus(app.state.connections)
     app.state.live = LiveSessionManager(settings)

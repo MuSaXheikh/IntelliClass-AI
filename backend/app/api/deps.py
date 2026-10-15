@@ -12,6 +12,7 @@ from app.models.session import LiveSession, SessionStatus
 from app.models.user import Role, User
 from app.services.live.manager import LiveSessionManager
 from app.services.nudge.service import NudgeService
+from app.services.storage.base import ObjectStorage
 from app.ws.bus import OutboundBus
 
 
@@ -109,3 +110,9 @@ def live_session_for_class(db: Session, class_id: str) -> LiveSession | None:
         LiveSession.class_id == class_id, LiveSession.status == SessionStatus.LIVE
     )
     return db.scalars(stmt).first()
+
+
+def get_storage_dep(request: Request) -> ObjectStorage:
+    """The slide-image store created in create_app (local disk or Supabase bucket)."""
+    storage: ObjectStorage = request.app.state.storage
+    return storage

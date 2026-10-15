@@ -1,7 +1,7 @@
 """Classes, enrolment, slides and starting a live session."""
 
 from fastapi import APIRouter, Depends, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -9,10 +9,10 @@ from app.api.deps import (
     get_class_or_404,
     get_owned_class,
     get_participant_class,
+    get_storage_dep,
     live_session_for_class,
 )
 from app.core.audit import record_audit
-from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
 from app.core.rbac import get_current_user, require_roles
 from app.db.base import new_id
@@ -24,6 +24,7 @@ from app.schemas.auth import UserOut
 from app.schemas.classes import ClassCreate, ClassOut, EnrolIn, EnrolOut, SlideOut, SlideUploadOut
 from app.schemas.sessions import SessionOut
 from app.services.slides import service as slides
+from app.services.storage.base import ObjectStorage
 
 router = APIRouter(prefix="/classes", tags=["classes"])
 MAX_PDF_BYTES = 40 * 1024 * 1024
@@ -135,13 +136,13 @@ async def upload_slides(
     file: UploadFile,
     cls: Class = Depends(get_owned_class),
     db: Session = Depends(get_db),
-    settings: Settings = Depends(get_settings),
+    storage: ObjectStorage = Depends(get_storage_dep),
 ) -> SlideUploadOut:
     """Replace the deck with the pages of a PDF."""
     data = await file.read(MAX_PDF_BYTES + 1)
     if len(data) > MAX_PDF_BYTES:
         raise ApiError(413, "FILE_TOO_LARGE", "PDF must be under 40 MB")
-    count = slides.replace_deck(db, settings.storage_dir, cls.id, data)
+    count = slides.replace_deck(db, storage, cls.id, data)
     db.commit()
     return SlideUploadOut(slide_count=count)
 
@@ -157,10 +158,18 @@ def list_slides(
 
 @router.get("/{class_id}/slides/{index}/image")
 def slide_image(
-    index: int, cls: Class = Depends(get_participant_class), db: Session = Depends(get_db)
-) -> FileResponse:
+    index: int,
+    cls: Class = Depends(get_participant_class),
+    db: Session = Depends(get_db),
+    storage: ObjectStorage = Depends(get_storage_dep),
+) -> Response:
+    """The rendered page, read from the store and served only to class participants."""
     slide = slides.get_slide(db, cls.id, index)
-    return FileResponse(slide.image_path, media_type="image/png")
+    return Response(
+        content=storage.get(slide.image_path),
+        media_type="image/png",
+        headers={"Cache-Control": "private, max-age=3600"},
+    )
 
 
 @router.post("/{class_id}/sessions", response_model=SessionOut, status_code=status.HTTP_201_CREATED)
