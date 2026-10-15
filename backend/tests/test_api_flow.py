@@ -115,11 +115,19 @@ def _pdf(pages: list[str]) -> bytes:
 
 
 def test_slides_upload_list_image_and_sync(
-    client: TestClient, instructor: tuple[str, dict], student: tuple[str, dict], live_session: dict
+    client: TestClient, instructor: tuple[str, dict], student: tuple[str, dict]
 ) -> None:
+    """Decks are managed before the class goes live; once live, uploads are refused."""
     itoken, _ = instructor
-    stoken, _ = student
-    cls, session = live_session["class"], live_session["session"]
+    stoken, sprofile = student
+    cls = client.post(
+        "/api/v1/classes", json={"name": "AI 101", "course_code": "CS-401"}, headers=auth(itoken)
+    ).json()
+    client.post(
+        f"/api/v1/classes/{cls['id']}/enrol",
+        json={"roll_numbers": [sprofile["roll_no"]]},
+        headers=auth(itoken),
+    )
     bad = client.post(
         f"/api/v1/classes/{cls['id']}/slides",
         files={"file": ("x.pdf", b"not a pdf", "application/pdf")},
@@ -144,7 +152,14 @@ def test_slides_upload_list_image_and_sync(
         and img.headers["content-type"] == "image/png"
         and img.content[:8] == b"\x89PNG\r\n\x1a\n"
     )
+    session = client.post(f"/api/v1/classes/{cls['id']}/sessions", headers=auth(itoken)).json()
     synced = client.post(
         f"/api/v1/sessions/{session['id']}/slide", json={"slide_index": 1}, headers=auth(itoken)
     ).json()
     assert synced["current_slide_index"] == 1 and synced["slide_count"] == 2
+    while_live = client.post(
+        f"/api/v1/classes/{cls['id']}/slides",
+        files={"file": ("deck.pdf", _pdf(["Late change"]), "application/pdf")},
+        headers=auth(itoken),
+    )
+    assert while_live.status_code == 409 and while_live.json()["error"]["code"] == "SESSION_LIVE"
