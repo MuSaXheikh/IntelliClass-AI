@@ -49,24 +49,45 @@ class SupabaseStorage:
     def get(self, key: str) -> bytes:
         try:
             res = self._client.get(f"/object/authenticated/{self.bucket}/{key}")
+            if res.status_code == 404:
+                raise ApiError(404, "IMAGE_NOT_FOUND", "Slide image is missing")
+            res.raise_for_status()
         except httpx.HTTPError as exc:
             raise ApiError(503, "STORAGE_UNAVAILABLE", "Could not read the slide image") from exc
-        if res.status_code == 404:
-            raise ApiError(404, "IMAGE_NOT_FOUND", "Slide image is missing")
-        res.raise_for_status()
         return res.content
+
+    def delete_objects(self, keys: list[str]) -> None:
+        try:
+            for start in range(0, len(keys), 100):
+                chunk = keys[start : start + 100]
+                self._client.request(
+                    "DELETE", f"/object/{self.bucket}", json={"prefixes": chunk}
+                ).raise_for_status()
+        except httpx.HTTPError as exc:
+            raise ApiError(503, "STORAGE_UNAVAILABLE", "Could not delete slide images") from exc
+
+    def _list_keys(self, folder: str) -> list[str]:
+        """Every object key under a folder; the Storage API lists one level at a time."""
+        res = self._client.post(
+            f"/object/list/{self.bucket}", json={"prefix": folder, "limit": 1000, "offset": 0}
+        )
+        res.raise_for_status()
+        keys: list[str] = []
+        for item in res.json():
+            name = item.get("name")
+            if not name:
+                continue
+            if item.get("id"):
+                keys.append(f"{folder}/{name}")
+            else:  # a sub-folder (no object id): recurse
+                keys.extend(self._list_keys(f"{folder}/{name}"))
+        return keys
 
     def delete_prefix(self, prefix: str) -> None:
         folder = prefix.rstrip("/")
         try:
-            res = self._client.post(
-                f"/object/list/{self.bucket}", json={"prefix": folder, "limit": 1000, "offset": 0}
-            )
-            res.raise_for_status()
-            names = [f"{folder}/{item['name']}" for item in res.json() if item.get("name")]
-            if names:
-                self._client.request(
-                    "DELETE", f"/object/{self.bucket}", json={"prefixes": names}
-                ).raise_for_status()
+            keys = self._list_keys(folder)
         except httpx.HTTPError as exc:
-            raise ApiError(503, "STORAGE_UNAVAILABLE", "Could not delete old slides") from exc
+            raise ApiError(503, "STORAGE_UNAVAILABLE", "Could not list slide images") from exc
+        if keys:
+            self.delete_objects(keys)

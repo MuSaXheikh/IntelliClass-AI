@@ -1,7 +1,9 @@
-"""WebSocket gateway: /ws/sessions/{session_id}?token=<JWT>.
+"""WebSocket gateway: /ws/sessions/{session_id}.
 
-Students stream 1 Hz numeric features in; instructors receive roster, status and
-alert messages; nudges go to exactly one student. No frame ever passes through here.
+The JWT travels in the Sec-WebSocket-Protocol header as ``bearer.<token>`` next to the
+``intelliclass`` protocol name, so it never appears in a URL or an access log. ``?token=`` is
+still accepted for older clients. Students stream 1 Hz numeric features in; instructors receive
+roster, status and alert messages; nudges go to exactly one student. No frame ever passes here.
 """
 
 import logging
@@ -10,6 +12,7 @@ from typing import Any
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import is_participant
@@ -18,6 +21,7 @@ from app.core.audit import record_audit
 from app.core.config import Settings
 from app.core.rbac import user_from_token
 from app.db.session import SessionLocal
+from app.models.audit import AuditLog
 from app.models.classroom import Class
 from app.models.event import Alert, Nudge
 from app.models.session import LiveSession, SessionStatus
@@ -45,6 +49,11 @@ class SocketContext:
     settings: Settings
 
 
+PROTOCOL = "intelliclass"
+CLOSE_UNAUTHORISED = 4401
+CLOSE_CONSENT_REQUIRED = 4403
+
+
 def _authorise(db: Session, token: str, session_id: str) -> tuple[User, LiveSession] | None:
     user = user_from_token(token, db)
     session = db.get(LiveSession, session_id)
@@ -56,19 +65,44 @@ def _authorise(db: Session, token: str, session_id: str) -> tuple[User, LiveSess
     return user, session
 
 
+def _has_consented(db: Session, user: User, session: LiveSession) -> bool:
+    """Students must have joined through the consent gate (which writes consent.grant)."""
+    if user.role != Role.STUDENT:
+        return True
+    stmt = select(AuditLog.id).where(
+        AuditLog.actor_id == user.id,
+        AuditLog.action == "consent.grant",
+        AuditLog.target_id == session.id,
+    )
+    return db.scalars(stmt).first() is not None
+
+
+def _token_from_subprotocols(header: str) -> tuple[str | None, str | None]:
+    """(token, protocol to select) from the offered Sec-WebSocket-Protocol list."""
+    offered = [item.strip() for item in header.split(",") if item.strip()]
+    token = next((item[len("bearer.") :] for item in offered if item.startswith("bearer.")), None)
+    return token, PROTOCOL if PROTOCOL in offered else None
+
+
 @router.websocket("/ws/sessions/{session_id}")
 async def session_socket(
     websocket: WebSocket, session_id: str, token: str = Query(default="")
 ) -> None:
     state = websocket.app.state
+    header_token, subprotocol = _token_from_subprotocols(
+        websocket.headers.get("sec-websocket-protocol", "")
+    )
     db = SessionLocal()
     try:
-        auth = _authorise(db, token, session_id)
+        auth = _authorise(db, header_token or token, session_id)
         if auth is None:
-            await websocket.close(code=4401)
+            await websocket.close(code=CLOSE_UNAUTHORISED)
             return
         user, session = auth
-        await websocket.accept()
+        if not _has_consented(db, user, session):
+            await websocket.close(code=CLOSE_CONSENT_REQUIRED)
+            return
+        await websocket.accept(subprotocol=subprotocol)
         conn = state.connections.add(session_id, websocket, user.id, user.role)
         ctx = SocketContext(
             websocket, db, user, session, conn, state.live, state.connections, state.settings
@@ -79,8 +113,8 @@ async def session_socket(
 
 
 async def _run(ctx: SocketContext) -> None:
-    await _on_open(ctx)
     try:
+        await _on_open(ctx)
         while True:
             raw = await ctx.websocket.receive_json()
             await _dispatch(ctx, raw)
@@ -102,6 +136,8 @@ async def _on_open(ctx: SocketContext) -> None:
                 ctx.session.id, envelope("status.update", change.to_payload())
             )
         return
+    record_audit(ctx.db, ctx.user.id, "session.monitor", "session", ctx.session.id)
+    ctx.db.commit()
     roster = [s.to_payload() for s in ctx.live.roster(ctx.session.id)]
     await ctx.websocket.send_json(envelope("roster.snapshot", {"students": roster}))
 

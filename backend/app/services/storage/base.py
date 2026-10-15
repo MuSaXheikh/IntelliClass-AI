@@ -13,5 +13,8 @@ class ObjectStorage(Protocol):
 
     def get(self, key: str) -> bytes: ...
 
+    def delete_objects(self, keys: list[str]) -> None:
+        """Delete these exact keys; missing keys are not an error."""
+
     def delete_prefix(self, prefix: str) -> None:
         """Delete every object whose key starts with ``prefix`` (a folder, ending in ``/``)."""

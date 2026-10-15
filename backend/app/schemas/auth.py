@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.schemas.common import OrmModel
+from app.schemas.common import OrmModel, bcrypt_safe
 
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -20,7 +20,7 @@ class UserOut(OrmModel):
 
 class RegisterIn(BaseModel):
     email: str = Field(max_length=255)
-    password: str = Field(min_length=8, max_length=128)
+    password: str = Field(min_length=8, max_length=72)
     full_name: str = Field(min_length=2, max_length=120)
     role: Literal["instructor", "student"]
     roll_no: str | None = Field(default=None, max_length=40)
@@ -32,6 +32,11 @@ class RegisterIn(BaseModel):
         if not _EMAIL.match(value):
             raise ValueError("must be a valid email address")
         return value
+
+    @field_validator("password")
+    @classmethod
+    def _password(cls, value: str) -> str:
+        return bcrypt_safe(value)
 
     @field_validator("roll_no")
     @classmethod

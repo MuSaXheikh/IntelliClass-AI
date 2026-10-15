@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.core.audit import record_audit
 from app.core.errors import ApiError
 from app.core.rbac import require_roles
 from app.db.session import get_db
@@ -37,5 +38,6 @@ def alert_feedback(
     if alert is None:
         raise ApiError(404, "ALERT_NOT_FOUND", "Alert not found")
     feedback = apply_feedback(db, alert, user, body.response)
+    record_audit(db, user.id, f"nudge.reply.{body.response}", "alert", alert.id)
     db.commit()
     return feedback

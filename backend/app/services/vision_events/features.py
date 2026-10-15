@@ -9,15 +9,15 @@ from pydantic import BaseModel, Field
 class VisionFeatures(BaseModel):
     """Numeric features computed in the student's browser. No image data, ever."""
 
-    ear: float | None = None
-    blink_rate: float | None = Field(default=None, ge=0)
-    perclos: float | None = Field(default=None, ge=0, le=1)
-    head_yaw: float | None = None
-    head_pitch: float | None = None
-    gaze_x: float | None = None
-    gaze_y: float | None = None
+    ear: float | None = Field(default=None, ge=0, le=2, allow_inf_nan=False)
+    blink_rate: float | None = Field(default=None, ge=0, le=300, allow_inf_nan=False)
+    perclos: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False)
+    head_yaw: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
+    head_pitch: float | None = Field(default=None, ge=-180, le=180, allow_inf_nan=False)
+    gaze_x: float | None = Field(default=None, ge=-10, le=10, allow_inf_nan=False)
+    gaze_y: float | None = Field(default=None, ge=-10, le=10, allow_inf_nan=False)
     face_present: bool | None = None
-    landmark_conf: float | None = Field(default=None, ge=0, le=1)
+    landmark_conf: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False)
     camera_on: bool = True
     page_visible: bool = True
     window_focused: bool = True

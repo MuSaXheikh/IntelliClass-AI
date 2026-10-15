@@ -10,6 +10,9 @@ os.environ.update(
     {
         "DATABASE_URL": f"sqlite:///{_TMP / 'test.db'}",
         "STORAGE_DIR": str(_TMP / "storage"),
+        "STORAGE_BACKEND": "local",  # never the developer's real bucket
+        "SUPABASE_URL": "",
+        "SUPABASE_SERVICE_KEY": "",
         "JWT_SECRET": "test-only-secret-0123456789abcdef0123456789abcdef",
         "AUTO_CREATE_TABLES": "true",
         "STATUS_HOLD_SECONDS": "0.1",
@@ -20,6 +23,7 @@ os.environ.update(
         "SCREEN_GRACE_SECONDS": "0.3",
         "ALERT_COOLDOWN_SECONDS": "0.5",
         "CONNECTION_TIMEOUT_SECONDS": "1",
+        "ATTENDED_MIN_SECONDS": "0",  # any observed time counts in fast tests
         "NUDGE_RATE_LIMIT": "2",
         "FEATURE_SMOOTHING_PACKETS": "1",
         # Tests must not pick up a developer's real LiveKit credentials from backend/.env
@@ -105,6 +109,12 @@ def live_session(
     )
     assert len(res.json()["enrolled"]) == 2
     session = client.post(f"/api/v1/classes/{cls['id']}/sessions", headers=auth(token)).json()
+    # Both students pass the consent gate, which the WebSocket requires before it accepts them.
+    for stoken, _ in (student, student2):
+        joined = client.post(
+            f"/api/v1/sessions/{session['id']}/join", json={"consent": True}, headers=auth(stoken)
+        )
+        assert joined.status_code == 200, joined.text
     return {"class": cls, "session": session}
 
 

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.db.base import as_utc, utcnow
 from app.models.event import Alert, AlertFeedback, Event, Nudge
 from app.models.session import LiveSession
@@ -23,6 +24,7 @@ class StudentStats:
     seconds_by_state: dict[str, float] = field(default_factory=dict)
     alerts: int = 0
     nudges: int = 0
+    observed_s: float = 0.0  # time with a working connection; attendance needs a minimum
 
 
 def _end_time(session: LiveSession) -> datetime:
@@ -107,6 +109,7 @@ def student_stats(db: Session, session: LiveSession, student: User) -> StudentSt
     nudges = db.scalars(
         select(Nudge).where(Nudge.session_id == session.id, Nudge.receiver_id == student.id)
     ).all()
+    observed = sum(v for k, v in seconds.items() if k != State.CONNECTION_PROBLEM.value)
     return StudentStats(
         student.id,
         student.roll_no,
@@ -115,13 +118,17 @@ def student_stats(db: Session, session: LiveSession, student: User) -> StudentSt
         seconds,
         len(alerts),
         len(nudges),
+        observed,
     )
 
 
 def session_report(db: Session, session: LiveSession, students: list[User]) -> dict[str, object]:
     """Instructor's post-class report: totals, alert mix, justified-alert rate, per-student rows."""
     rows = [student_stats(db, session, s) for s in students]
-    attended = [r for r in rows if r.seconds_by_state]  # never-joined students are left out
+    minimum = (
+        get_settings().attended_min_seconds
+    )  # a second online then an hour offline is not attendance
+    attended = [r for r in rows if r.observed_s > 0 and r.observed_s >= minimum]
     alerts = db.scalars(select(Alert).where(Alert.session_id == session.id)).all()
     feedback = (
         db.scalars(

@@ -31,7 +31,7 @@ from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models.classroom import Class, Enrolment
 from app.models.user import Role, User
-from app.services.slides.service import replace_deck
+from app.services.slides.service import discard_images, replace_deck
 from app.services.storage import get_storage
 
 logger = logging.getLogger("seed")
@@ -156,8 +156,10 @@ def main(argv: list[str] | None = None) -> int:
             for s in students:
                 if s.id not in enrolled:
                     db.add(Enrolment(class_id=cls.id, student_id=s.id))
-            count = replace_deck(db, storage, cls.id, _deck_pdf())
+            deck = replace_deck(db, storage, cls.id, _deck_pdf())
             db.commit()
+            discard_images(storage, deck.stale_keys)
+            count = deck.count
     except (OperationalError, ProgrammingError) as exc:
         logger.error("database not ready (%s). Run: uv run alembic upgrade head", exc.orig)
         return 1

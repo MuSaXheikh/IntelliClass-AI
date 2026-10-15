@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.schemas.common import OrmModel
+from app.schemas.common import OrmModel, bcrypt_safe
 
 
 class AlertPreferences(OrmModel):
@@ -51,4 +51,9 @@ class ProfileUpdateIn(BaseModel):
 
 class PasswordChangeIn(BaseModel):
     current_password: str = Field(min_length=1)
-    new_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=72)
+
+    @field_validator("new_password")
+    @classmethod
+    def _password(cls, value: str) -> str:
+        return bcrypt_safe(value)

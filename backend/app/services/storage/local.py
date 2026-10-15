@@ -31,5 +31,9 @@ class LocalStorage:
         except FileNotFoundError as exc:
             raise ApiError(404, "IMAGE_NOT_FOUND", "Slide image is missing") from exc
 
+    def delete_objects(self, keys: list[str]) -> None:
+        for key in keys:
+            self._path(key).unlink(missing_ok=True)
+
     def delete_prefix(self, prefix: str) -> None:
         shutil.rmtree(self._path(prefix), ignore_errors=True)

@@ -13,6 +13,7 @@ class StudentRow(BaseModel):
     seconds_by_state: dict[str, float]
     alerts: int
     nudges: int
+    observed_s: float = 0.0
 
 
 class TimelinePoint(BaseModel):

@@ -24,6 +24,7 @@ from typing import Any
 
 import httpx
 import websockets
+from websockets.typing import Subprotocol
 
 from scripts.seed import load_roster
 
@@ -126,8 +127,9 @@ async def _run_student(
             headers={"Authorization": f"Bearer {token}"},
         )
         join.raise_for_status()
-    url = f"{ws_base}/ws/sessions/{session_id}?token={token}"
-    async with websockets.connect(url) as ws:
+    url = f"{ws_base}/ws/sessions/{session_id}"
+    protocols = [Subprotocol("intelliclass"), Subprotocol(f"bearer.{token}")]
+    async with websockets.connect(url, subprotocols=protocols) as ws:
         logger.info("%s connected", email)
         for t in range(int(minutes * 60)):
             packet = script(float(t))

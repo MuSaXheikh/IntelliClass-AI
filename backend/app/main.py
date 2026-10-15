@@ -42,7 +42,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if settings.auto_create_tables:
             Base.metadata.create_all(bind=engine)
         storage.ensure_ready()
-        task = asyncio.create_task(watchdog_loop(app.state.live, app.state.connections))
+        task = asyncio.create_task(watchdog_loop(app.state.live, app.state.connections, settings))
         logger.info("%s started (%s)", settings.app_name, settings.environment)
         try:
             yield

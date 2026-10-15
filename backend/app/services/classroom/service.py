@@ -7,13 +7,13 @@ from app.models.classroom import Class, Enrolment
 from app.models.event import Alert, AlertFeedback, Event, Nudge
 from app.models.session import LiveSession
 from app.services.slides.service import clear_deck
-from app.services.storage.base import ObjectStorage
 
 
-def delete_class(db: Session, storage: ObjectStorage, cls: Class) -> None:
+def delete_class(db: Session, cls: Class) -> str:
     """Remove the class with its roster, deck, sessions, events, alerts, nudges and replies.
 
-    Audit rows are kept: they record that the data existed and who touched it. Caller commits.
+    Audit rows are kept: they record that the data existed and who touched it. Caller commits,
+    then discards the returned storage folder.
     """
     session_ids = list(db.scalars(select(LiveSession.id).where(LiveSession.class_id == cls.id)))
     if session_ids:
@@ -23,7 +23,8 @@ def delete_class(db: Session, storage: ObjectStorage, cls: Class) -> None:
         db.execute(delete(Alert).where(Alert.session_id.in_(session_ids)))
         db.execute(delete(Event).where(Event.session_id.in_(session_ids)))
         db.execute(delete(LiveSession).where(LiveSession.id.in_(session_ids)))
-    clear_deck(db, storage, cls.id)
+    folder = clear_deck(db, cls.id)
     db.execute(delete(Enrolment).where(Enrolment.class_id == cls.id))
     db.delete(cls)
     db.flush()
+    return folder

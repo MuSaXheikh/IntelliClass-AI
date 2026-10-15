@@ -5,9 +5,12 @@ profile, so parallel uploads do not fight over a lock. Detection uses the file's
 not the name the browser sent, except for legacy .ppt (an OLE container shared with .doc/.xls).
 """
 
+import contextlib
 import io
 import logging
+import os
 import shutil
+import signal
 import subprocess
 import tempfile
 import zipfile
@@ -70,15 +73,22 @@ def to_pdf(data: bytes, filename: str, soffice: str, timeout_s: float) -> bytes:
             tmp,
             str(src),
         ]
+        # Its own process group, so a timeout kills soffice.bin too, not only the wrapper.
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True
+        )
         try:
-            proc = subprocess.run(cmd, capture_output=True, timeout=timeout_s, check=False)
+            _, stderr = proc.communicate(timeout=timeout_s)
         except subprocess.TimeoutExpired as exc:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(proc.pid, signal.SIGKILL)
+            proc.communicate()
             raise ApiError(
                 400, "CONVERSION_TIMEOUT", "Converting this deck took too long; export it to PDF"
             ) from exc
         out = src.with_suffix(".pdf")
         if proc.returncode != 0 or not out.exists():
-            logger.warning("soffice failed rc=%s: %s", proc.returncode, proc.stderr[-400:])
+            logger.warning("soffice failed rc=%s: %s", proc.returncode, stderr[-400:])
             raise ApiError(
                 400, "CONVERSION_FAILED", "Could not convert this deck; export it to PDF"
             )

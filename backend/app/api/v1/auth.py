@@ -1,10 +1,11 @@
-"""Register and login."""
+"""Register, login and token refresh."""
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ApiError
+from app.core.rbac import get_current_user
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models.user import User
@@ -38,5 +39,12 @@ def login(body: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
     user = db.scalars(select(User).where(User.email == body.email.strip().lower())).first()
     if user is None or not verify_password(body.password, user.password_hash):
         raise ApiError(401, "INVALID_CREDENTIALS", "Email or password is incorrect")
+    token = create_access_token(user.id, user.role)
+    return TokenOut(access_token=token, user=UserOut.model_validate(user))
+
+
+@router.post("/refresh", response_model=TokenOut)
+def refresh(user: User = Depends(get_current_user)) -> TokenOut:
+    """A fresh token for a still-valid one, so a long class never logs anyone out."""
     token = create_access_token(user.id, user.role)
     return TokenOut(access_token=token, user=UserOut.model_validate(user))

@@ -131,8 +131,13 @@ def enrol(
 
 @router.get("/{class_id}/students", response_model=list[UserOut])
 def list_students(
-    cls: Class = Depends(get_owned_class), db: Session = Depends(get_db)
+    cls: Class = Depends(get_owned_class),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> list[User]:
+    """Roster with names, emails and roll numbers: a data view, so it is audit-logged."""
+    record_audit(db, user.id, "class.students.view", "class", cls.id)
+    db.commit()
     stmt = (
         select(User)
         .join(Enrolment, Enrolment.student_id == User.id)
@@ -162,9 +167,10 @@ async def upload_slides(
         settings.soffice_path,
         settings.slide_convert_timeout_seconds,
     )
-    count = slides.replace_deck(db, storage, cls.id, pdf)
+    result = await run_in_threadpool(slides.replace_deck, db, storage, cls.id, pdf)
     db.commit()
-    return SlideUploadOut(slide_count=count)
+    await run_in_threadpool(slides.discard_images, storage, result.stale_keys)
+    return SlideUploadOut(slide_count=result.count)
 
 
 @router.get("/{class_id}/slides", response_model=list[SlideOut])
@@ -186,9 +192,10 @@ def remove_deck(
 ) -> Response:
     """Delete every slide of the class (not while a session is live)."""
     _require_not_live(db, cls)
-    slides.clear_deck(db, storage, cls.id)
+    folder = slides.clear_deck(db, cls.id)
     record_audit(db, user.id, "slides.remove", "class", cls.id)
     db.commit()
+    slides.discard_prefix(storage, folder)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -236,8 +243,9 @@ def delete_class(
     """Delete the class with its roster, deck, sessions and their records (not while live)."""
     _require_not_live(db, cls)
     record_audit(db, user.id, "class.delete", "class", cls.id)
-    classroom.delete_class(db, storage, cls)
+    folder = classroom.delete_class(db, cls)
     db.commit()
+    slides.discard_prefix(storage, folder)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

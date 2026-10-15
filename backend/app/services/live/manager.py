@@ -123,6 +123,8 @@ class LiveSessionManager:
                 FeatureSmoother(self.settings.feature_smoothing_packets),
             )
             students[user.id] = live
+        if live.connected:
+            return None  # a second socket from the same student: keep the current state
         live.connected = True
         live.last_packet_at = self._clock()
         live.set_state(State.ATTENTIVE, 1.0)
