@@ -47,6 +47,7 @@ Status: `todo` · `doing` · `done` · `blocked`
 | DB-02 | Postgres (Supabase) + pgvector, Alembic migrations | M2 | doing (local Supabase + Alembic incl. pgvector done 2026-10-15; cloud project pending) |
 | DB-03 | Seed script with demo data | M2 | done (roster and password given at run time; no built-in accounts) |
 | DB-05 | Broker channels (in-process asyncio queues by default; Redis only if multiple API replicas) | M2 | done |
+| DB-06 | Slide images in a private Supabase Storage bucket via a storage adapter (API proxies reads; local-disk fallback) | M2 | done (2026-10-15) |
 
 ## Phase 3: Vision Module (weeks 11–20)
 
