@@ -40,7 +40,7 @@ Status: `todo` · `doing` · `done` · `blocked`
 | BE-01 | Auth: register/login, hashed passwords, JWT | M2 | done |
 | BE-02 | RBAC dependency (Instructor/Student/Admin) on every endpoint | M2 | done |
 | BE-03 | Classes API: create, enrol by roll number, list | M2 | done |
-| BE-04 | Slide upload: PDF → per-slide images and text (PPT via LibreOffice later) | M2 | done |
+| BE-04 | Slide upload: PDF, PowerPoint or ODP → per-slide images and text (PPT/ODP converted by LibreOffice) | M2 | done (PPT/ODP added 2026-10-15) |
 | BE-05 | LiveKit token endpoint and session start/join/end | M2 | done |
 | BE-06 | WebSocket gateway with JWT auth and per-session rooms; broker abstraction (in-process default, Redis optional) | M2 | done |
 | BE-07 | Current-slide sync event | M2 | done |
