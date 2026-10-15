@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,9 +14,9 @@ class Settings(BaseSettings):
     app_name: str = "IntelliClass AI API"
     environment: str = "local"
     database_url: str = "sqlite:///./intelliclass.db"
-    auto_create_tables: bool = True
+    auto_create_tables: bool = False  # schema comes from Alembic; tests set this to true
     redis_url: str | None = None
-    jwt_secret: str = "change_me"
+    jwt_secret: str  # required: python -c "import secrets; print(secrets.token_urlsafe(48))"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 120
     allowed_origins: str = "http://localhost:3000"
@@ -54,6 +55,13 @@ class Settings(BaseSettings):
     # Private nudge
     nudge_rate_limit: int = 3
     nudge_rate_window_seconds: float = 600.0
+
+    @field_validator("jwt_secret")
+    @classmethod
+    def _secret_is_strong(cls, value: str) -> str:
+        if len(value) < 32 or "change_me" in value:
+            raise ValueError("JWT_SECRET must be a random string of at least 32 characters")
+        return value
 
     @property
     def origins(self) -> list[str]:
