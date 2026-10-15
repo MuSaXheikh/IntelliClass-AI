@@ -10,7 +10,7 @@ from app.schemas.reports import ReportOut, StudentRow
 A4 = fitz.paper_rect("a4")
 MARGIN = 44.0
 WIDTH = A4.width - 2 * MARGIN
-BODY, BOLD = "helv", "hebo"
+BODY, BOLD = "helv", "hebo"  # base-14 fonts: keep to Latin-1 glyphs (no en dash, no ellipsis)
 INK = (0.09, 0.13, 0.18)
 MUTED = (0.42, 0.47, 0.53)
 LINE = (0.83, 0.86, 0.90)
@@ -50,15 +50,15 @@ def _fit(text: str, width: float, size: float, font: str = BODY) -> str:
     """Shorten text with an ellipsis so it fits in `width` points."""
     if fitz.get_text_length(text, fontname=font, fontsize=size) <= width:
         return text
-    while text and fitz.get_text_length(text + "…", fontname=font, fontsize=size) > width:
+    while text and fitz.get_text_length(text + "...", fontname=font, fontsize=size) > width:
         text = text[:-1]
-    return text + "…"
+    return text + "..."
 
 
 def _most_time_in(row: StudentRow) -> str:
     states = {k: v for k, v in row.seconds_by_state.items() if v > 0}
     if not states:
-        return "–"
+        return "-"
     state = max(states, key=lambda k: states[k])
     return STATE_LABEL.get(state, state)
 
@@ -113,7 +113,7 @@ class _Writer:
 
 def _tiles(w: _Writer, report: ReportOut) -> None:
     rate = report.justified_alert_rate
-    justified = "–" if rate is None else f"{round(100 * rate)}%"
+    justified = "-" if rate is None else f"{round(100 * rate)}%"
     tiles = [
         ("Enrolled", str(report.students)),
         ("Attended", str(report.attended)),
@@ -225,7 +225,7 @@ def _student_table(w: _Writer, rows: list[StudentRow]) -> None:
             w.new_page()
             header()
         cells = (
-            row.roll_no or "–",
+            row.roll_no or "-",
             row.full_name,
             f"{round(row.attention_pct)}%",
             _duration(row.observed_s),
