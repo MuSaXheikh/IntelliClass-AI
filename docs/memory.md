@@ -159,6 +159,7 @@ Message envelope: `{ "type": "...", "payload": { ... }, "ts": "ISO-8601" }`. The
 
 - `DELETE /classes/{id}` (owner) removes the class with roster, deck, sessions, events, alerts, nudges and replies (audit rows stay); `DELETE /classes/{id}/slides` clears the deck. Both, and deck upload, answer 409 `SESSION_LIVE` while a session is live. `GET /classes/{id}/slides` rows carry `id`; the image route sets `ETag` = slide id with `Cache-Control: private, no-cache` and answers 304 to `If-None-Match`, and the frontend appends `?v=<slide id>` so a replaced deck shows at once.
 
+- `GET /sessions/{id}/report.pdf` (owner): the report rendered server-side with PyMuPDF as an A4 PDF (tiles, timeline, alerts by type, per-student table; no images); audit `report.download`. The report page's "Download PDF" button fetches it with the auth header.
 - Socket auth: the JWT travels as `bearer.<token>` in `Sec-WebSocket-Protocol` next to `intelliclass` (query `?token=` still accepted); close codes `4401` sign-in rejected, `4403` consent missing (the student never called `/join`); clients stop reconnecting on those. `POST /auth/refresh` returns a new token for a valid one. `session.auto_end` audit action when the watchdog ends an idle session; `session.monitor`, `class.students.view` audit the instructor's data views.
 
 ## 8. Core Data Model (Tables)

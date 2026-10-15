@@ -1,6 +1,6 @@
 """Live session endpoints: join, slide sync, end, nudge, alerts, report."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -18,7 +18,7 @@ from app.core.audit import record_audit
 from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
 from app.core.rbac import get_current_user, require_roles
-from app.db.base import utcnow
+from app.db.base import as_utc, utcnow
 from app.db.session import get_db
 from app.models.classroom import Class, Enrolment
 from app.models.event import Alert
@@ -32,6 +32,7 @@ from app.services.live.manager import LiveSessionManager
 from app.services.livekit.token import create_join_token
 from app.services.nudge.service import NudgeService
 from app.services.preferences import service as preferences
+from app.services.reports.pdf import render_session_report
 from app.services.reports.service import session_report
 from app.services.slides import service as slides
 from app.ws.bus import OutboundBus
@@ -172,17 +173,48 @@ def get_report(
     db: Session = Depends(get_db),
 ) -> ReportOut:
     """Post-class analytics; viewing it is audit-logged (who viewed whose data)."""
-    students = list(
-        db.scalars(
-            select(User)
-            .join(Enrolment, Enrolment.student_id == User.id)
-            .where(Enrolment.class_id == session.class_id)
-            .order_by(User.roll_no)
-        )
-    )
+    students = _enrolled_students(db, session.class_id)
     record_audit(db, user.id, "report.view", "session", session.id)
     db.commit()
     return ReportOut.model_validate(session_report(db, session, students))
+
+
+@router.get("/{session_id}/report.pdf")
+def download_report_pdf(
+    session: LiveSession = Depends(get_owned_session),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    """The same report rendered on the server as an A4 PDF (numbers and charts, no images)."""
+    students = _enrolled_students(db, session.class_id)
+    cls = db.get(Class, session.class_id)
+    report = ReportOut.model_validate(session_report(db, session, students))
+    pdf = render_session_report(
+        report,
+        cls.name if cls else "Class",
+        cls.course_code if cls else "",
+        user.full_name,
+    )
+    record_audit(db, user.id, "report.download", "session", session.id)
+    db.commit()
+    code = (cls.course_code if cls else "class").replace(" ", "_")
+    filename = f"intelliclass-report-{code}-{as_utc(session.started_at):%Y-%m-%d}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _enrolled_students(db: Session, class_id: str) -> list[User]:
+    return list(
+        db.scalars(
+            select(User)
+            .join(Enrolment, Enrolment.student_id == User.id)
+            .where(Enrolment.class_id == class_id)
+            .order_by(User.roll_no)
+        )
+    )
 
 
 __all__ = ["Class", "router"]

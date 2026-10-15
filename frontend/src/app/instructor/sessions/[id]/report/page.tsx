@@ -8,15 +8,18 @@ import { StateLegend } from "@/components/charts/StateLegend";
 import { StateStackBar } from "@/components/charts/StateStackBar";
 import { StatTile } from "@/components/charts/StatTile";
 import { TypeBars } from "@/components/charts/TypeBars";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
+import { useToast } from "@/components/ui/Toast";
 import { api, ApiError } from "@/lib/api";
 import {
   CHART_STATE_ORDER,
   formatDateTime,
   formatDuration,
   formatPercent,
+  reportFilename,
   sortByAttention,
 } from "@/lib/report";
 import type { ClassSummary, Report, Session, StudentRow, StudentState } from "@/types/contract";
@@ -34,6 +37,23 @@ export default function SessionReportPage() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const toast = useToast();
+
+  const downloadPdf = async (courseCode: string, startedAt: string) => {
+    setDownloading(true);
+    try {
+      await api.download(`/sessions/${id}/report.pdf`, reportFilename(courseCode, startedAt));
+    } catch (caught: unknown) {
+      toast.push({
+        kind: "error",
+        title: "Could not download the PDF",
+        description: caught instanceof ApiError ? caught.message : "Unexpected error",
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -71,12 +91,22 @@ export default function SessionReportPage() {
             {session.status === "live" && " · still live, numbers are provisional"}
           </p>
         </div>
-        <Link
-          href={`/instructor/classes/${cls.id}`}
-          className="text-sm text-primary underline-offset-2 hover:underline dark:text-green-300"
-        >
-          Back to class
-        </Link>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={downloading}
+            onClick={() => void downloadPdf(cls.course_code, report.started_at)}
+          >
+            {downloading ? "Preparing PDF…" : "Download PDF"}
+          </Button>
+          <Link
+            href={`/instructor/classes/${cls.id}`}
+            className="text-sm text-primary underline-offset-2 hover:underline dark:text-green-300"
+          >
+            Back to class
+          </Link>
+        </div>
       </header>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Summary">

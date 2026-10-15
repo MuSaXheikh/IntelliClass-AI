@@ -308,7 +308,7 @@ An instructor's saved alert preferences from the Settings page. Applied to sessi
 - **alerts.severity:** sleepy 7, no_face 6, wrong_screen 5, looking_away 4, camera_off 3, uncertain 2, connection_problem 1, attentive 0.
 - **alerts.status:** open → acknowledged (instructor sent a nudge) → resolved (student replied i_am_back).
 - **alert_feedback.response:** i_am_back, connection_problem.
-- **audit_logs.action:** session.start, session.end, class.enrol, consent.grant, alerts.view, report.view, nudge.send, nudge.reply.i_am_back, nudge.reply.connection_problem, profile.update, password.change, preferences.update, preferences.reset, slides.remove, class.delete.
+- **audit_logs.action:** session.start, session.end, class.enrol, consent.grant, alerts.view, report.view, nudge.send, nudge.reply.i_am_back, nudge.reply.connection_problem, profile.update, password.change, preferences.update, preferences.reset, slides.remove, class.delete, report.download, session.monitor, class.students.view, session.auto_end.
 
 ## Planned additions (Phase 5)
 

@@ -89,3 +89,11 @@ export function formatDateTime(iso: string): string {
     minute: "2-digit",
   });
 }
+
+/** File name for the downloaded PDF: course code and the class date, safe on every OS. */
+export function reportFilename(courseCode: string, startedAt: string): string {
+  const code = (courseCode || "class").replace(/[^A-Za-z0-9-]+/g, "_");
+  const date = new Date(startedAt);
+  const day = Number.isNaN(date.getTime()) ? "undated" : date.toISOString().slice(0, 10);
+  return `intelliclass-report-${code}-${day}.pdf`;
+}

@@ -4,6 +4,7 @@ import {
   formatDuration,
   formatPercent,
   orderedCounts,
+  reportFilename,
   sortByAttention,
   stateShares,
 } from "@/lib/report";
@@ -62,5 +63,20 @@ describe("formatters", () => {
     expect(formatPercent(41.44)).toBe("41%");
     expect(formatPercent(41.44, 1)).toBe("41.4%");
     expect(formatPercent(null)).toBe("—");
+  });
+});
+
+describe("reportFilename", () => {
+  it("uses the course code and the class date", () => {
+    expect(reportFilename("CS-401", "2026-10-16T09:30:00Z")).toBe(
+      "intelliclass-report-CS-401-2026-10-16.pdf",
+    );
+  });
+
+  it("sanitises odd codes and tolerates a bad date", () => {
+    expect(reportFilename("CS 401/B", "nope")).toBe("intelliclass-report-CS_401_B-undated.pdf");
+    expect(reportFilename("", "2026-10-16T09:30:00Z")).toBe(
+      "intelliclass-report-class-2026-10-16.pdf",
+    );
   });
 });

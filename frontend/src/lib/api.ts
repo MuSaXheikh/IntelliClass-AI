@@ -88,6 +88,20 @@ export const api = {
     return request<T>(path, { method: "DELETE", headers: { ...authHeaders() } });
   },
 
+  /** Fetch a protected file with the auth header and hand it to the browser as a download. */
+  async download(path: string, filename: string): Promise<void> {
+    const response = await fetch(`${API_URL}${path}`, { headers: { ...authHeaders() } });
+    if (!response.ok) throw await parseError(response);
+    const url = URL.createObjectURL(await response.blob());
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+
   /** Fetch a protected binary (slide image) and return an object URL the caller must revoke.
    *  `no-cache` makes the browser revalidate with the server (ETag) instead of trusting a
    *  cached copy, so a replaced deck never shows old pages. */
