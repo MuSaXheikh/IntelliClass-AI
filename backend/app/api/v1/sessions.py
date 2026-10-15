@@ -42,9 +42,20 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 @router.get("/{session_id}", response_model=SessionOut)
 def get_session(
-    session: LiveSession = Depends(get_participant_session), db: Session = Depends(get_db)
+    session: LiveSession = Depends(get_participant_session),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
 ) -> SessionOut:
-    return session_out(db, session)
+    """Session details; the class owner also gets a LiveKit token that may publish video."""
+    out = session_out(db, session)
+    cls = db.get(Class, session.class_id)
+    owner = cls is not None and cls.instructor_id == user.id
+    if owner and session.status == SessionStatus.LIVE:
+        token = create_join_token(settings, session.livekit_room, user.id, user.full_name, True)
+        out.livekit_token = token
+        out.livekit_url = settings.livekit_url if token else None
+    return out
 
 
 @router.post("/{session_id}/join", response_model=JoinOut)

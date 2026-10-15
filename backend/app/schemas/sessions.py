@@ -13,6 +13,9 @@ class SessionOut(BaseModel):
     ended_at: datetime | None
     current_slide_index: int
     slide_count: int
+    # Only set for the class owner on GET /sessions/{id} when LiveKit is configured.
+    livekit_url: str | None = None
+    livekit_token: str | None = None
 
 
 class JoinIn(BaseModel):
