@@ -80,9 +80,14 @@ export const api = {
     return request<T>(path, { method: "DELETE", headers: { ...authHeaders() } });
   },
 
-  /** Fetch a protected binary (slide image) and return an object URL the caller must revoke. */
+  /** Fetch a protected binary (slide image) and return an object URL the caller must revoke.
+   *  `no-cache` makes the browser revalidate with the server (ETag) instead of trusting a
+   *  cached copy, so a replaced deck never shows old pages. */
   async blobUrl(path: string): Promise<string> {
-    const response = await fetch(`${API_URL}${path}`, { headers: { ...authHeaders() } });
+    const response = await fetch(`${API_URL}${path}`, {
+      headers: { ...authHeaders() },
+      cache: "no-cache",
+    });
     if (!response.ok) throw await parseError(response);
     return URL.createObjectURL(await response.blob());
   },
