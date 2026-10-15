@@ -103,6 +103,7 @@ Severity order (high → low): `sleepy`, `no_face`, `wrong_screen`, `looking_awa
 | POST | `/classes/{id}/slides` | Instructor | multipart `file` (PDF) → `{slide_count}`; replaces existing deck |
 | GET | `/classes/{id}/slides` | Participants | `[{index, text_preview}]` |
 | GET | `/classes/{id}/slides/{index}/image` | Participants | PNG |
+| GET | `/classes/{id}/sessions` | Participants | `[Session]` newest first (report links) |
 | POST | `/classes/{id}/sessions` | Instructor | Start live session → 201 `Session` (409 if one is live) |
 | GET | `/sessions/{id}` | Participants | `Session` |
 | POST | `/sessions/{id}/join` | Student | `{consent: true}` → `{session, livekit_url, livekit_token, ws_path}`; consent audit-logged |
@@ -110,7 +111,7 @@ Severity order (high → low): `sleepy`, `no_face`, `wrong_screen`, `looking_awa
 | POST | `/sessions/{id}/end` | Instructor | → `Session`; broadcasts `session.ended` |
 | POST | `/sessions/{id}/nudge` | Instructor | `{student_id, message, alert_id?}` → 201 `Nudge`; 429 `NUDGE_RATE_LIMITED` |
 | GET | `/sessions/{id}/alerts` | Instructor | `[Alert]` |
-| GET | `/sessions/{id}/report` | Instructor | `Report` (post-class analytics) |
+| GET | `/sessions/{id}/report` | Instructor | `Report`: totals, `alerts_by_type`, `justified_alert_rate`, `per_student[]` (seconds_by_state), `timeline[]` of `{minute, attentive_pct, students}` |
 | POST | `/alerts/{id}/feedback` | Student (target) | `{response: "i_am_back" \| "connection_problem"}` → 201 |
 | GET | `/me/summary` | Student | Own attention/participation summary only |
 | GET | `/sessions/{id}/transcript` · `/summary` | Participants | (Phase 5) Lecture text, summary, key points, questions |

@@ -77,6 +77,7 @@ export interface Nudge {
 }
 
 export interface SlideInfo {
+  id: string;
   index: number;
   text_preview: string;
 }
@@ -215,6 +216,57 @@ export type ClientPayload<T extends ClientMessageType> = Extract<
   ClientMessage,
   { type: T }
 >["payload"];
+
+// ---------- Reports (GET /sessions/{id}/report, GET /me/summary) ----------
+
+export interface TimelinePoint {
+  minute: number;
+  attentive_pct: number;
+  students: number;
+}
+
+export interface StudentRow {
+  student_id: string;
+  roll_no: string | null;
+  full_name: string;
+  attention_pct: number;
+  seconds_by_state: Partial<Record<StudentState, number>>;
+  alerts: number;
+  nudges: number;
+}
+
+export interface Report {
+  session_id: string;
+  class_id: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_s: number;
+  students: number;
+  attended: number;
+  avg_attention_pct: number;
+  alerts_total: number;
+  alerts_by_type: Partial<Record<StudentState, number>>;
+  nudges_total: number;
+  justified_alert_rate: number | null;
+  per_student: StudentRow[];
+  timeline: TimelinePoint[];
+}
+
+export interface SessionSummaryRow {
+  session_id: string;
+  class_id: string;
+  class_name: string;
+  status: SessionStatus;
+  started_at: string;
+  attention_pct: number;
+  seconds_by_state: Partial<Record<StudentState, number>>;
+  alerts: number;
+  nudges: number;
+}
+
+export interface StudentSummary {
+  sessions: SessionSummaryRow[];
+}
 
 // ---- settings (v1.1) -------------------------------------------------------------------
 

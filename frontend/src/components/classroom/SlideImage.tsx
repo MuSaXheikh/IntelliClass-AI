@@ -6,11 +6,14 @@ interface SlideImageProps {
   classId: string;
   index: number | null;
   alt: string;
+  /** Changes when the deck is replaced (slide row id), so the image is fetched again. */
+  version?: string;
 }
 
 /** 16:9 slide canvas. Images are protected, so they are fetched with the auth header. */
-export function SlideImage({ classId, index, alt }: SlideImageProps) {
-  const path = index === null ? null : `/classes/${classId}/slides/${index}/image`;
+export function SlideImage({ classId, index, alt, version }: SlideImageProps) {
+  const suffix = version ? `?v=${encodeURIComponent(version)}` : "";
+  const path = index === null ? null : `/classes/${classId}/slides/${index}/image${suffix}`;
   const { url, failed } = useAuthedImage(path);
   return (
     <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-card border border-line bg-slate-100 dark:border-slate-700 dark:bg-slate-800">

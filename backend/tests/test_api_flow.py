@@ -1,5 +1,7 @@
 """REST flow: auth, RBAC, classes, enrolment, sessions, consent, slides."""
 
+import time
+
 import fitz
 from fastapi.testclient import TestClient
 
@@ -163,3 +165,48 @@ def test_slides_upload_list_image_and_sync(
         headers=auth(itoken),
     )
     assert while_live.status_code == 409 and while_live.json()["error"]["code"] == "SESSION_LIVE"
+
+
+def test_sessions_list_and_report_timeline(
+    client: TestClient, instructor: tuple[str, dict], student: tuple[str, dict], live_session: dict
+) -> None:
+    itoken, _ = instructor
+    cls, session = live_session["class"], live_session["session"]
+    with client.websocket_connect(f"/ws/sessions/{session['id']}?token={student[0]}") as ws:
+        for _ in range(3):
+            ws.send_json(
+                {
+                    "type": "vision.features",
+                    "payload": {
+                        "ear": 0.3,
+                        "perclos": 0.02,
+                        "face_present": True,
+                        "landmark_conf": 0.9,
+                    },
+                }
+            )
+        ws.send_json({"type": "heartbeat", "payload": {}})
+        assert ws.receive_json()["type"] == "heartbeat"
+        time.sleep(0.3)  # stay connected for a moment so the first minute has a counted student
+        client.post(f"/api/v1/sessions/{session['id']}/end", headers=auth(itoken))
+
+    sessions = client.get(f"/api/v1/classes/{cls['id']}/sessions", headers=auth(itoken)).json()
+    assert [s["id"] for s in sessions] == [session["id"]] and sessions[0]["status"] == "ended"
+    assert (
+        client.get(f"/api/v1/classes/{cls['id']}/sessions", headers=auth(student[0])).status_code
+        == 200
+    )
+
+    report = client.get(f"/api/v1/sessions/{session['id']}/report", headers=auth(itoken)).json()
+    assert report["class_id"] == cls["id"]
+    assert report["students"] == 2 and report["attended"] == 1  # student2 never joined
+    assert report["avg_attention_pct"] == 100.0  # averaged over attendees only
+    assert len(report["timeline"]) >= 1
+    first = report["timeline"][0]
+    assert first["minute"] == 0 and first["students"] == 1 and first["attentive_pct"] == 100.0
+
+    summary = client.get("/api/v1/me/summary", headers=auth(student[0])).json()
+    assert (
+        summary["sessions"][0]["class_id"] == cls["id"]
+        and summary["sessions"][0]["status"] == "ended"
+    )
