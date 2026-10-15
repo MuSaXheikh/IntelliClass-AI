@@ -17,7 +17,7 @@ Status: `todo` · `doing` · `done` · `blocked`
 | DES-02 | Wireframes: login, home, consent gate, live class | M1 | done (design.md) |
 | DES-03 | Wireframes: report, My Summary, assistant | M1 | done (design.md) |
 | DES-04 | Clickable Figma prototype, reviewed with 2–3 teachers/students | M1 | todo |
-| DB-01 | ERD for all tables | M2 | done |
+| DB-01 | ERD for all tables | M2 | done (`erd.md`) |
 
 ## Phase 2: Setup, Auth & Classroom Core (weeks 6–14)
 
