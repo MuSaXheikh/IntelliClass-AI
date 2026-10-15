@@ -33,6 +33,7 @@ class EnrolOut(BaseModel):
 
 
 class SlideOut(BaseModel):
+    id: str
     index: int
     text_preview: str
 
