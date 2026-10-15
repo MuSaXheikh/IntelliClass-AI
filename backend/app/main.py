@@ -21,6 +21,7 @@ from app.db.base import Base
 from app.db.session import engine
 from app.services.live.manager import LiveSessionManager
 from app.services.nudge.service import NudgeService
+from app.services.preferences.service import policy_for_session
 from app.services.storage import get_storage
 from app.ws.bus import InProcessBus
 from app.ws.connections import ConnectionManager
@@ -55,7 +56,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.storage = storage
     app.state.connections = ConnectionManager()
     app.state.bus = InProcessBus(app.state.connections)
-    app.state.live = LiveSessionManager(settings)
+    app.state.live = LiveSessionManager(
+        settings, policy_loader=lambda session_id: policy_for_session(settings, session_id)
+    )
     app.state.nudges = NudgeService(settings)
 
     app.add_middleware(
