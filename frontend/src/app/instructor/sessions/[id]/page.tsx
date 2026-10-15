@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AlertPanel } from "@/components/classroom/AlertPanel";
 import { ClassStrip } from "@/components/classroom/ClassStrip";
@@ -39,7 +39,29 @@ export default function InstructorLiveRoomPage() {
   const [slideBusy, setSlideBusy] = useState(false);
   const [nudgingId, setNudgingId] = useState<string | null>(null);
   const [ending, setEnding] = useState(false);
+  const endingRef = useRef(false);
   const socket = useSessionSocket(sessionId, token);
+  const previousStatus = useRef(socket.status);
+
+  // Alerts raised while this laptop was offline never arrive over the socket (reconnect only
+  // resends the roster), so refetch the history whenever the connection comes back.
+  useEffect(() => {
+    const was = previousStatus.current;
+    previousStatus.current = socket.status;
+    if (socket.status === "open" && was === "reconnecting") {
+      api
+        .get<Alert[]>(`/sessions/${sessionId}/alerts`)
+        .then(setAlerts)
+        .catch(() => undefined);
+    }
+    if (socket.status === "rejected") {
+      toast.push({
+        kind: "error",
+        title: "Live connection refused",
+        description: "Your sign-in may have expired. Reload the page or sign in again.",
+      });
+    }
+  }, [socket.status, sessionId, toast]);
 
   useEffect(() => {
     Promise.all([
@@ -72,16 +94,14 @@ export default function InstructorLiveRoomPage() {
         setSession((s) => (s ? { ...s, current_slide_index: slide_index } : s)),
       ),
       socket.subscribe("session.ended", () => {
+        if (endingRef.current) return; // our own End class call already navigates to the report
         toast.push({ title: "Class ended" });
-        setSession((s) => {
-          router.replace(s ? `/instructor/classes/${s.class_id}` : "/instructor");
-          return s;
-        });
+        router.replace(`/instructor/sessions/${sessionId}/report`);
       }),
       socket.subscribe("error", (payload) => toast.push({ kind: "error", title: payload.message })),
     ];
     return () => unsubscribe.forEach((fn) => fn());
-  }, [socket, router, toast]);
+  }, [socket, router, toast, sessionId]);
 
   const students = useMemo(() => Object.values(roster), [roster]);
   const counts = useMemo(() => countStates(students), [students]);
@@ -135,11 +155,13 @@ export default function InstructorLiveRoomPage() {
 
   const endClass = async () => {
     setEnding(true);
+    endingRef.current = true;
     try {
       await api.post<Session>(`/sessions/${sessionId}/end`);
       router.replace(`/instructor/sessions/${sessionId}/report`);
     } catch (caught) {
       toast.push({ kind: "error", title: "Could not end class", description: describe(caught) });
+      endingRef.current = false;
       setEnding(false);
     }
   };

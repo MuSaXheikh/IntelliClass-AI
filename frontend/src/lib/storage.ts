@@ -42,3 +42,17 @@ export function readJson<T>(raw: string | null): T | null {
     return null;
   }
 }
+
+/** Keys in sessionStorage that start with `prefix` (empty when storage is unavailable). */
+export function listSessionKeys(prefix: string): string[] {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < window.sessionStorage.length; i += 1) {
+      const key = window.sessionStorage.key(i);
+      if (key && key.startsWith(prefix)) keys.push(key);
+    }
+    return keys;
+  } catch {
+    return [];
+  }
+}

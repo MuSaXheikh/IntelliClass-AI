@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -10,9 +11,11 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { api } from "@/lib/api";
+import { api, ApiError, setUnauthorizedHandler } from "@/lib/api";
 import { AUTH_USER_KEY } from "@/lib/config";
-import { writeLocal } from "@/lib/storage";
+import { clearAllJoinInfo } from "@/lib/joinStore";
+import { decodeJwtExp } from "@/lib/jwt";
+import { readJson, readLocal, writeLocal } from "@/lib/storage";
 import { getToken, setToken, subscribeToken } from "@/lib/tokenStore";
 import type { LoginResponse, RegisterRequest, User } from "@/types/contract";
 
@@ -37,11 +40,22 @@ interface Validated {
   user: User;
 }
 
+/** Refresh this long before the token expires (tokens last hours; refresh is cheap). */
+const REFRESH_BEFORE_MS = 30 * 60 * 1000;
+
+function forgetSession(): void {
+  writeLocal(AUTH_USER_KEY, null);
+  clearAllJoinInfo();
+  setToken(null);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const token = useSyncExternalStore(subscribeToken, getToken, () => null);
   const [validated, setValidated] = useState<Validated | null>(null);
 
-  // A stored token is only trusted once GET /me confirms it.
+  // A stored token is only trusted once GET /me confirms it. A network or server hiccup keeps
+  // the cached profile; only an explicit 401/403 signs the user out.
   useEffect(() => {
     if (!token) return;
     let active = true;
@@ -52,14 +66,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setValidated({ token, user: me });
         writeLocal(AUTH_USER_KEY, JSON.stringify(me));
       })
-      .catch(() => {
+      .catch((caught: unknown) => {
         if (!active) return;
-        writeLocal(AUTH_USER_KEY, null);
-        setToken(null);
+        const rejected =
+          caught instanceof ApiError && (caught.status === 401 || caught.status === 403);
+        const cached = rejected ? null : readJson<User>(readLocal(AUTH_USER_KEY));
+        if (cached) setValidated({ token, user: cached });
+        else forgetSession();
       });
     return () => {
       active = false;
     };
+  }, [token]);
+
+  // Any 401 outside /auth/* means the token is dead: sign out and return to login.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      if (!getToken()) return;
+      forgetSession();
+      setValidated(null);
+      router.replace("/login?expired=1");
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [router]);
+
+  // Renew the token well before it expires, so a long class never logs anyone out.
+  useEffect(() => {
+    if (!token) return;
+    const exp = decodeJwtExp(token);
+    if (!exp) return;
+    const msLeft = exp * 1000 - Date.now();
+    if (msLeft <= 0) return; // the next request's 401 signs the user out
+    const timer = setTimeout(
+      () => {
+        api
+          .post<LoginResponse>("/auth/refresh")
+          .then((response) => {
+            writeLocal(AUTH_USER_KEY, JSON.stringify(response.user));
+            setValidated({ token: response.access_token, user: response.user });
+            setToken(response.access_token);
+          })
+          .catch(() => undefined); // a failed refresh is retried by the next mount or ends in a 401
+      },
+      Math.max(60_000, msLeft - REFRESH_BEFORE_MS),
+    );
+    return () => clearTimeout(timer);
   }, [token]);
 
   const user = validated && validated.token === token ? validated.user : null;
@@ -92,9 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    writeLocal(AUTH_USER_KEY, null);
+    forgetSession();
     setValidated(null);
-    setToken(null);
   }, []);
 
   const value = useMemo(

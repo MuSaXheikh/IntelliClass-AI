@@ -29,15 +29,21 @@ export function ConsentGate({ className, busy, error, onJoin, onCancel }: Consen
 
   useEffect(() => stopTest, []);
 
+  // The <video> only exists while testing, so attach the stream after it has mounted.
+  useEffect(() => {
+    if (!testing) return;
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!video || !stream) return;
+    video.srcObject = stream;
+    void video.play().catch(() => undefined);
+  }, [testing]);
+
   const testCamera = async () => {
     setTestError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => undefined);
-      }
       setTesting(true);
     } catch (caught) {
       setTestError(describeMediaError(caught, "camera"));

@@ -32,6 +32,7 @@ cd frontend && nvm use && pnpm install && cp .env.local.example .env.local
 pnpm dev                                           # http://localhost:3000
 ```
 
+Slide images are kept under `backend/storage` by default; set `STORAGE_BACKEND=supabase` and `SUPABASE_SERVICE_KEY` (from `supabase status`) to keep them in the private Supabase bucket instead. After a reboot run `supabase start` again before the backend.
 No accounts are built in. The seed takes an instructor and a `roster.csv` of students (one `email,full_name,roll_no` per line, git-ignored) and prints a generated password once; pass `--password` to choose one. SQLite still works for a quick trial (`DATABASE_URL=sqlite:///./intelliclass.db`).
 Instructors upload decks as PDF, PowerPoint (.pptx, .ppt) or OpenDocument (.odp); non-PDF decks are converted with LibreOffice, so install `libreoffice-impress` on the machine running the backend (the Dockerfile does).
 To populate the dashboard without six webcams: `uv run python -m scripts.simulate_students --roster roster.csv --password <seed password>` after starting a class. Full walkthrough in `docs/demo.md`.
@@ -50,7 +51,7 @@ Restart the backend. Instructors then publish camera and microphone; students pu
 
 ## Branches
 
-`main` is demo-ready, `develop` is integration, features live on `feature/<area>-<name>` and are merged by pull request after review (see `docs/rules.md`). Open feature branches are listed in `docs/progress.md`.
+`main` is the demo-ready state and `develop` the integration branch (`docs/rules.md`). Feature work goes on `feature/<id>-<slug>` branches and is squash-merged into `develop`; the report-pages and LiveKit branches were merged on 16 October 2026 and no feature branch is open.
 
 ## Quality gates
 

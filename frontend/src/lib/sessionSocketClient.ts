@@ -1,17 +1,28 @@
 import { WS_HEARTBEAT_MS, WS_RECONNECT_BASE_MS, WS_RECONNECT_MAX_MS } from "@/lib/config";
 import type { ClientMessageType, ClientPayload, ServerMessage } from "@/types/contract";
 
-export type SocketStatus = "idle" | "connecting" | "open" | "reconnecting" | "closed";
+export type SocketStatus = "idle" | "connecting" | "open" | "reconnecting" | "rejected" | "closed";
+
+/** The protocol name the server selects; the token rides next to it as `bearer.<jwt>`. */
+export const WS_PROTOCOL = "intelliclass";
+/** Close codes after which reconnecting cannot help: the server refused this identity. */
+export const FINAL_CLOSE_CODES: ReadonlySet<number> = new Set([4401, 4403, 1008]);
+
+export function authProtocols(token: string | null): string[] {
+  return token ? [WS_PROTOCOL, `bearer.${token}`] : [WS_PROTOCOL];
+}
 
 export interface SocketClientOptions {
   url: string;
   dispatch: (message: ServerMessage) => void;
   onStatus: (status: SocketStatus) => void;
+  /** Evaluated on every (re)connect, so a refreshed token is used without a new client. */
+  protocols?: () => string[];
   heartbeatMs?: number;
   reconnectBaseMs?: number;
   reconnectMaxMs?: number;
   /** Injectable for tests. */
-  createSocket?: (url: string) => WebSocket;
+  createSocket?: (url: string, protocols: string[]) => WebSocket;
 }
 
 function isServerMessage(value: unknown): value is ServerMessage {
@@ -22,17 +33,22 @@ function isServerMessage(value: unknown): value is ServerMessage {
 
 /**
  * Framework-free WebSocket client for one live session: envelope {type, payload, ts},
- * heartbeat, capped exponential reconnect. Stops reconnecting after `session.ended` or close().
+ * heartbeat, capped exponential reconnect. Stops for good after `session.ended`, close(), or a
+ * final close code (sign-in rejected, consent missing, policy violation): then status is
+ * "rejected" and the page must tell the user instead of retrying every 30 s forever.
  */
 export class SessionSocketClient {
   status: SocketStatus = "idle";
+  /** Code of the last close event: 4401 sign-in rejected, 4403 consent missing. */
+  closeCode: number | null = null;
   private socket: WebSocket | null = null;
   private attempt = 0;
   private stopped = false;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-  private readonly options: Required<Omit<SocketClientOptions, "createSocket">> & {
-    createSocket: (url: string) => WebSocket;
+  private readonly options: Required<Omit<SocketClientOptions, "createSocket" | "protocols">> & {
+    createSocket: (url: string, protocols: string[]) => WebSocket;
+    protocols: () => string[];
   };
 
   constructor(options: SocketClientOptions) {
@@ -40,7 +56,8 @@ export class SessionSocketClient {
       heartbeatMs: WS_HEARTBEAT_MS,
       reconnectBaseMs: WS_RECONNECT_BASE_MS,
       reconnectMaxMs: WS_RECONNECT_MAX_MS,
-      createSocket: (url) => new WebSocket(url),
+      protocols: () => [WS_PROTOCOL],
+      createSocket: (url, protocols) => new WebSocket(url, protocols),
       ...options,
     };
   }
@@ -48,12 +65,12 @@ export class SessionSocketClient {
   connect(): void {
     if (this.stopped) return;
     this.setStatus(this.attempt === 0 ? "connecting" : "reconnecting");
-    const socket = this.options.createSocket(this.options.url);
+    const socket = this.options.createSocket(this.options.url, this.options.protocols());
     this.socket = socket;
     socket.onopen = () => this.handleOpen();
     socket.onmessage = (event: MessageEvent<string>) => this.handleMessage(event.data);
-    socket.onclose = () => this.handleClose();
-    socket.onerror = () => undefined; // onclose follows and schedules the reconnect
+    socket.onclose = (event: CloseEvent) => this.handleClose(event.code);
+    socket.onerror = () => undefined; // onclose follows and decides what to do
   }
 
   close(): void {
@@ -96,11 +113,17 @@ export class SessionSocketClient {
     this.options.dispatch(parsed);
   }
 
-  private handleClose(): void {
+  private handleClose(code: number): void {
+    this.closeCode = code;
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     this.heartbeatTimer = null;
     if (this.stopped) {
       this.setStatus("closed");
+      return;
+    }
+    if (FINAL_CLOSE_CODES.has(code)) {
+      this.stopped = true;
+      this.setStatus("rejected");
       return;
     }
     const delay = Math.min(

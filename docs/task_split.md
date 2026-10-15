@@ -13,7 +13,7 @@ The roadmap was written for three roles (M1 Frontend, M2 Backend, M3 DevOps/QA/A
 | **Role** | Backend, DevOps and integration lead | Frontend and screen-compliance feature | ML engineer: vision models, speech, RAG | Data, documentation, QA coordination, project management |
 | **Main folders** | `backend/`, `.github/`, `docker-compose.yml`, `infra/` | `frontend/`, `backend/app/services/screen/` | `ml/` (notebooks, training, evaluation), `backend/app/services/{vision_events,nlp}` model code | `docs/`, `docs/evaluation/`, data-collection forms, report and slides |
 | **Tools** | FastAPI, SQLAlchemy, Alembic, Docker, GitHub Actions, k6 | Next.js, React, Tailwind, Vitest, Playwright, MediaPipe, tesseract.js | Python, PyTorch/scikit-learn, Colab/Kaggle, Whisper/Groq, pgvector | Word/Google Docs, spreadsheets, Markdown, Git for docs only |
-| **Open tasks** | 15 | 13 | 12 | 12 |
+| **Open tasks** | 16 | 13 | 12 | 13 |
 | **Roadmap code** | M2 + DevOps half of M3 | M1 | AI half of M3 | new M4 |
 
 Everything marked `done` in `tasks.md` so far (the vertical slice: auth, classes, slides, consent join, WebSocket gateway, rule-based classifier, alert engine, nudges, reports, MediaPipe worker, CI) was built by Musa. The split below is for the remaining work.
@@ -27,7 +27,7 @@ Owns the server, the database, hosting, CI/CD, security and load testing, and ke
 | Phase | ID | Task | Note |
 |---|---|---|---|
 | 1 | SET-04 | Free-tier accounts: Supabase, Oracle Cloud / Azure for Students, Vercel, LiveKit | credentials never committed |
-| 2 | DB-02 | Supabase Postgres + pgvector, migrations | initial migration done; Supabase pending |
+| 2 | DB-02 | Supabase Postgres + pgvector, migrations | local Supabase stack and migrations done; cloud project pending |
 | 2 | DOC-01 | Keep `memory.md` current; review PRs for `rules.md` compliance | ongoing |
 | 3 | BE-14 | Integrate Faraz's learned classifier behind the same interface as the rule-based one | handshake H4 with Faraz |
 | 4 | DB-04 | Indexes and retention policy for events/alerts | |
@@ -109,6 +109,7 @@ Suggested learning path so Sohaib can grow into technical work by the second hal
 | Handshake | Between | What is agreed | When |
 |---|---|---|---|
 | H1 | Musa ↔ Ahmad | API + WebSocket contract v1 (already frozen in `memory.md` §7); any change goes through a PR that updates `contract.ts` and the schemas together | done |
+| H2 | Musa → all | Dev environment usable by everyone: Supabase CLI stack, Alembic, seed with a roster, CI | done |
 | H3 | Ahmad ↔ Faraz | Fields of the `vision.features` packet; Faraz asks for new features here, Ahmad adds them in the worker | week 12 |
 | H4 | Faraz ↔ Musa | Learned classifier takes the same feature window as the baseline and returns the same `(state, confidence)` | week 20 |
 | H5 | Faraz ↔ Sohaib | Recording plan and label definitions before any participant is recorded | week 10 |

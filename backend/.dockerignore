@@ -1,0 +1,14 @@
+.venv
+.env
+.env.*
+!.env.example
+storage/
+supabase/.temp/
+supabase/.branches/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.db
+roster*.csv

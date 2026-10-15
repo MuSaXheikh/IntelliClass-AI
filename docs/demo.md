@@ -5,18 +5,19 @@ What this demo shows: an instructor starts a class, students join after consent,
 ## 0. Prepare while you still have internet (once)
 
 ```bash
-cd backend && supabase start && uv sync && cp .env.example .env   # then set DATABASE_URL and JWT_SECRET in .env
+cd backend && supabase start && uv sync && cp .env.example .env   # set DATABASE_URL (DB_URL from `supabase status`, +psycopg) and a random JWT_SECRET
 uv run alembic upgrade head && uv run python -m scripts.seed --instructor-email you@uni.edu --instructor-name "Your Name" --roster roster.csv
 cd ../frontend && source ~/.nvm/nvm.sh && nvm use 22 && pnpm install && cp .env.local.example .env.local && pnpm build
 ```
 
-After this, nothing below needs a connection: the API, the SQLite database, the Swagger page, the MediaPipe model and WASM runtime (served from `frontend/public/`) and the fonts are all local. The only thing that needs internet is LiveKit audio/video, which the offline demo skips.
+After this, nothing below needs a connection: the API, the local Supabase database (Docker), the Swagger page, the MediaPipe model and WASM runtime (served from `frontend/public/`) and the fonts are all local. The only thing that needs internet is LiveKit audio/video, which the offline demo skips.
 
 ## 1. Start everything
 
 ```bash
-# terminal 1
-cd backend && uv run uvicorn app.main:app --port 8000
+# after a reboot, first: cd backend && supabase start
+# terminal 1 (use --host 0.0.0.0 when a phone or second laptop will connect)
+cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 # terminal 2 (production build, no internet needed)
 cd frontend && source ~/.nvm/nvm.sh && nvm use 22 && pnpm start
 ```
@@ -26,7 +27,7 @@ Open http://localhost:3000 (API docs at http://localhost:8000/docs). For two log
 ### Second laptop over a phone hotspot (no data needed)
 
 1. On the demo laptop: `hostname -I` → e.g. `192.168.43.10`.
-2. `frontend/.env.local`: `NEXT_PUBLIC_API_URL=http://192.168.43.10:8000/api/v1` and `NEXT_PUBLIC_WS_URL=ws://192.168.43.10:8000/ws`, then `pnpm build` again (while online).
+2. Leave `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL` empty in `frontend/.env.local`: the app derives them from the page host, so no rebuild is needed. Start the backend with `--host 0.0.0.0` and allow ports 3000 and 8000 in the firewall (`sudo ufw allow 3000,8000/tcp`).
 3. `backend/.env`: `ALLOWED_ORIGINS=http://localhost:3000,http://192.168.43.10:3000`.
 4. On the student laptop open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, add `http://192.168.43.10:3000`, enable, relaunch. Browsers only allow the camera on HTTPS or localhost; this flag is the one-time exception for a LAN demo.
 5. Open `http://192.168.43.10:3000` on the student laptop.
@@ -71,6 +72,8 @@ Click **End class**. Open the report: attention %, alerts by type, nudges, justi
 
 ## Known gaps today
 
-- LiveKit audio/video is wired for tokens but not configured; set the three LIVEKIT_* variables to enable the video stage.
+- LiveKit audio/video needs the three LIVEKIT_* variables in `backend/.env`; without them the video stage says "not configured" and everything else still works.
+- Decks can be PDF, PowerPoint or ODP; PowerPoint needs LibreOffice on the backend machine. A deck cannot be changed while the class is live.
+- A live class nobody is connected to ends itself after 45 minutes (`SESSION_IDLE_MINUTES`).
 - Screen-content similarity (OCR) is Phase 4; the wrong-screen signal is the visibility baseline (decision D14).
 - Transcription, summaries and the RAG assistant are Phase 5.

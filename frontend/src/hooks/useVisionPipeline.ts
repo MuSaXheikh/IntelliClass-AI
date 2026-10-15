@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { describeMediaError } from "@/lib/media";
 import {
   BLINK_MAX_CLOSED_FRAMES,
   BLINK_WINDOW_MS,
@@ -17,7 +18,14 @@ import type { VisionFeaturesPayload } from "@/types/contract";
 import type { VisionWorkerInbound, VisionWorkerOutbound } from "@/workers/visionProtocol";
 
 export type VisionStatus =
-  "idle" | "starting" | "loading_model" | "running" | "camera_denied" | "camera_ended" | "error";
+  | "idle"
+  | "starting"
+  | "loading_model"
+  | "running"
+  | "camera_denied"
+  | "camera_unavailable"
+  | "camera_ended"
+  | "error";
 
 export interface VisionPipeline {
   status: VisionStatus;
@@ -76,6 +84,9 @@ function supportsTrackProcessor(): boolean {
  * Captures the camera, hands frames to the worker, and emits one `vision.features` packet
  * per second with page visibility and focus attached. Image data never leaves the worker.
  */
+const CAMERA_RETRIES = 12;
+const CAMERA_RETRY_MS = 5000;
+
 export function useVisionPipeline({ enabled, onPacket }: Options): VisionPipeline {
   const [status, setStatus] = useState<VisionStatus>("starting");
   const [error, setError] = useState<string | null>(null);
@@ -145,13 +156,31 @@ export function useVisionPipeline({ enabled, onPacket }: Options): VisionPipelin
       }
     };
 
-    const start = async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
-      } catch {
-        setStatus("camera_denied");
-        return;
+    // A camera held by another app (NotReadableError) often frees up within seconds; a denied
+    // permission never does. Retry the former a few times, report the latter at once.
+    const acquireCamera = async (): Promise<MediaStream | null> => {
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          return await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
+        } catch (caught) {
+          const name = caught instanceof DOMException ? caught.name : "";
+          const denied = name === "NotAllowedError" || name === "SecurityError";
+          if (denied || attempt >= CAMERA_RETRIES || cancelled) {
+            setError(describeMediaError(caught, "camera"));
+            setStatus(denied ? "camera_denied" : "camera_unavailable");
+            return null;
+          }
+          setStatus("camera_unavailable");
+          setError(`${describeMediaError(caught, "camera")} Retrying…`);
+          await new Promise<void>((resolve) => setTimeout(resolve, CAMERA_RETRY_MS));
+        }
       }
+    };
+
+    const start = async () => {
+      const acquired = await acquireCamera();
+      if (!acquired) return;
+      stream = acquired;
       setError(null);
       if (cancelled) {
         stopCamera();

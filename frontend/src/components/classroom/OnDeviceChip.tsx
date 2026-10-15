@@ -6,7 +6,8 @@ const HINTS: Record<VisionStatus, string> = {
   loading_model: "Loading the on-device model…",
   running: "Camera analysis: on-device ✔",
   camera_denied: "Camera blocked. Allow it in the browser bar to take part.",
-  camera_ended: "Camera stopped. Reconnect it to continue.",
+  camera_unavailable: "Camera unavailable. Close other apps that use it; retrying.",
+  camera_ended: "Camera stopped. Plug it back in and reload this page.",
   error: "Camera analysis unavailable on this browser.",
 };
 

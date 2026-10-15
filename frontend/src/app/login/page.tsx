@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { homePathFor, useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +20,13 @@ export default function LoginPage() {
   useEffect(() => {
     if (!loading && user) router.replace(homePathFor(user));
   }, [loading, user, router]);
+
+  // ?expired=1 is set by the auth provider after a 401; read it without a state update.
+  const expired = useSyncExternalStore(
+    () => () => undefined,
+    () => new URLSearchParams(window.location.search).has("expired"),
+    () => false,
+  );
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -56,6 +63,11 @@ export default function LoginPage() {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
+        {expired && (
+          <p className="text-sm text-ink-muted dark:text-slate-400" role="status">
+            Your session expired. Please sign in again.
+          </p>
+        )}
         {error && (
           <p className="text-sm text-red-600" role="alert">
             {error}

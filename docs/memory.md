@@ -159,6 +159,8 @@ Message envelope: `{ "type": "...", "payload": { ... }, "ts": "ISO-8601" }`. The
 
 - `DELETE /classes/{id}` (owner) removes the class with roster, deck, sessions, events, alerts, nudges and replies (audit rows stay); `DELETE /classes/{id}/slides` clears the deck. Both, and deck upload, answer 409 `SESSION_LIVE` while a session is live. `GET /classes/{id}/slides` rows carry `id`; the image route sets `ETag` = slide id with `Cache-Control: private, no-cache` and answers 304 to `If-None-Match`, and the frontend appends `?v=<slide id>` so a replaced deck shows at once.
 
+- Socket auth: the JWT travels as `bearer.<token>` in `Sec-WebSocket-Protocol` next to `intelliclass` (query `?token=` still accepted); close codes `4401` sign-in rejected, `4403` consent missing (the student never called `/join`); clients stop reconnecting on those. `POST /auth/refresh` returns a new token for a valid one. `session.auto_end` audit action when the watchdog ends an idle session; `session.monitor`, `class.students.view` audit the instructor's data views.
+
 ## 8. Core Data Model (Tables)
 
 `users`, `classes`, `enrolments`, `sessions`, `slides`, `events`, `alerts`, `nudges`, `alert_feedback`, `instructor_settings`, `transcripts`, `chunks` (with `vector` embedding), `summaries`, `audit_logs`. Diagram: `erd.md`. No table stores images or video.
@@ -166,30 +168,34 @@ Message envelope: `{ "type": "...", "payload": { ... }, "ts": "ISO-8601" }`. The
 ## 9. Environment Settings
 
 ```
-# backend/.env.example
-DATABASE_URL=postgresql+psycopg://postgres:<pw>@127.0.0.1:54322/postgres   # local Supabase DB_URL; cloud later
-STORAGE_BACKEND=supabase              # or local (PNGs under STORAGE_DIR)
+# backend/.env (copy backend/.env.example; every key maps to a Settings field)
+DATABASE_URL=postgresql+psycopg://postgres:<pw>@127.0.0.1:54322/postgres   # DB_URL from `supabase status`; cloud later
+AUTO_CREATE_TABLES=false              # Alembic owns the schema
+STORAGE_BACKEND=local                 # or supabase (private bucket); STORAGE_DIR=./storage for local
 SUPABASE_URL=http://127.0.0.1:54321   # API_URL from `supabase status`
-SUPABASE_SERVICE_KEY=<service role>   # server-side only
+SUPABASE_SERVICE_KEY=<service role>   # server-side only, never committed
 SUPABASE_BUCKET=slides
-REDIS_URL=rediss://...               # Upstash
+SOFFICE_PATH=soffice                  # LibreOffice for PowerPoint/ODP decks; SLIDE_CONVERT_TIMEOUT_SECONDS=120
 JWT_SECRET=<random, 32+ chars, required>
-JWT_EXPIRE_MINUTES=120
+JWT_EXPIRE_MINUTES=480                # clients refresh via POST /auth/refresh 30 min before expiry
+SESSION_IDLE_MINUTES=45               # a live session nobody is connected to ends itself
+ATTENDED_MIN_SECONDS=60               # connected time needed to count as attended
+ALLOWED_ORIGINS=http://localhost:3000,http://<lan-ip>:3000
 LIVEKIT_URL=wss://<project>.livekit.cloud
 LIVEKIT_API_KEY=...
 LIVEKIT_API_SECRET=...
-LLM_BASE_URL=http://localhost:11434   # Ollama (or HF Space)
-GROQ_API_KEY=                         # optional
-WHISPER_MODEL=small                   # or base
-ALLOWED_ORIGINS=https://intelliclass-ai.vercel.app,http://localhost:3000
+REDIS_URL=                            # reserved for multi-replica fan-out (D16); unused today
+VISION_DEBUG_LOG=false                # per-packet feature log, calibration sessions only
+# thresholds: see backend/.env.example (EAR, PERCLOS, head pose, persistence windows, cooldown)
 
 # frontend/.env.local
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
-NEXT_PUBLIC_LIVEKIT_URL=wss://<project>.livekit.cloud
+NEXT_PUBLIC_API_URL=                  # empty = derived from the page host (phone over LAN works)
+NEXT_PUBLIC_WS_URL=
+NEXT_PUBLIC_LIVEKIT_URL=
 ```
-- Local dev ports: frontend `3000`, backend `8000`, Redis `6379`.
-- Environments: `local` (Docker Compose), `staging/prod` (Vercel + free VM per D13).
+- Local dev: frontend `3000`, backend `8000`, Supabase CLI stack `54321` (API), `54322` (Postgres), `54323` (Studio), `54324` (mail).
+- `docker-compose.yml` (single VM): Postgres on `127.0.0.1:5433`, API on `8000`, Redis `6380` only with `--profile redis`; a `migrate` job runs Alembic before the API starts.
+- Environments: `local` (Supabase CLI stack), compose (one VM), `staging/prod` (Vercel + free VM per D13, Supabase cloud).
 
 ## 10. Team Ownership
 
@@ -204,6 +210,7 @@ NEXT_PUBLIC_LIVEKIT_URL=wss://<project>.livekit.cloud
 | Date | Update |
 |------|--------|
 | 2026-10 | Proposal approved; project docs generated; setup phase beginning |
+| 2026-10-16 (pm) | **Full-project review and hardening**: both feature branches merged into `develop`/`main`; ~30 confirmed defects fixed (token refresh + 401 handling, socket stops on 4401/4403 and authenticates by subprotocol, ended/rejected states, atomic off-loop deck replacement with ETag images, NaN rejection, bcrypt limit, audit gaps, consent-gated sockets, idle auto-end, compose stack exercised, tests never touch the real bucket). Backend 58 tests, frontend 55. See `progress.md` "Hardening review". |
 | 2026-10-16 | Instructor **Settings page** (`/instructor/settings`): profile name, password change, and per-instructor alert preferences stored in `instructor_settings` and applied to sessions started after saving (policy loader in `LiveSessionManager`, per-send nudge limit). Backend 40 tests, frontend 40. Class page: replace or remove the deck, delete the class with confirmation; deck changes blocked while live; slide images revalidate by ETag instead of being cached for an hour. |
 | 2026-10-15 | Local Supabase stack configured (`backend/supabase/config.toml`, project `intelliclass`); Alembic migrations applied on Postgres including pgvector; seed and simulator take a roster and password at run time and the demo credentials were removed from code and docs; `JWT_SECRET` is required; compose no longer defaults the DB password (D18). Slide images moved to a private Supabase Storage bucket through a storage adapter with a local-disk fallback (D19). Deck upload now accepts PowerPoint and ODP as well as PDF, converted by LibreOffice headless (BE-04). Four-member split in `task_split.md`; ERD in `erd.md`. |
 | 2026-10-13 (pm) | Two feature branches pushed, not merged: `feature/fe-report-pages` (report/summary pages, sessions endpoint, timeline) and `feature/livekit-video` (instructor publish token; LiveKit Cloud project `intelliclass-ai-xgvhr235`, credentials in `backend/.env` only). |

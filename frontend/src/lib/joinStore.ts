@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { JOIN_INFO_KEY_PREFIX } from "@/lib/config";
-import { readJson, readSession, writeSession } from "@/lib/storage";
+import { listSessionKeys, readJson, readSession, writeSession } from "@/lib/storage";
 import type { JoinResponse } from "@/types/contract";
 
 /** Join info written by the consent page and read by the live classroom (survives reloads). */
@@ -22,6 +22,13 @@ export function readJoinInfo(sessionId: string): JoinResponse | null {
 
 export function writeJoinInfo(sessionId: string, info: JoinResponse | null): void {
   writeSession(keyFor(sessionId), info ? JSON.stringify(info) : null);
+  listeners.forEach((listener) => listener());
+}
+
+/** On logout: the next person on this browser must pass the consent gate as themselves. */
+export function clearAllJoinInfo(): void {
+  for (const key of listSessionKeys(JOIN_INFO_KEY_PREFIX)) writeSession(key, null);
+  cache.clear();
   listeners.forEach((listener) => listener());
 }
 

@@ -36,8 +36,16 @@ async function parseError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, code, message);
 }
 
+let onUnauthorized: (() => void) | null = null;
+
+/** Called once per 401 outside /auth/*, so the app can sign the user out instead of showing empty pages. */
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  onUnauthorized = handler;
+}
+
 async function request<T>(path: string, init: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, init);
+  if (response.status === 401 && !path.startsWith("/auth/")) onUnauthorized?.();
   if (!response.ok) throw await parseError(response);
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;

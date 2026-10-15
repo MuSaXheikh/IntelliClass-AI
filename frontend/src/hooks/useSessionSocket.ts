@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { WS_URL } from "@/lib/config";
-import { SessionSocketClient, type SocketStatus } from "@/lib/sessionSocketClient";
+import { authProtocols, SessionSocketClient, type SocketStatus } from "@/lib/sessionSocketClient";
+import { getToken } from "@/lib/tokenStore";
 import type {
   ClientMessageType,
   ClientPayload,
@@ -43,6 +44,7 @@ export function useSessionSocket(
   options: Options = {},
 ): SessionSocket {
   const enabled = options.enabled ?? true;
+  const hasToken = Boolean(token);
   const holderRef = useRef<Holder>({
     client: null,
     handlers: new Map(),
@@ -50,7 +52,7 @@ export function useSessionSocket(
   });
 
   useEffect(() => {
-    if (!enabled || !sessionId || !token) return;
+    if (!enabled || !sessionId || !hasToken) return;
     const holder = holderRef.current;
     const notify = () => holder.statusListeners.forEach((listener) => listener());
     const dispatch = (message: ServerMessage) => {
@@ -59,7 +61,10 @@ export function useSessionSocket(
       for (const handler of set) handler(message.payload, message.ts);
     };
     const client = new SessionSocketClient({
-      url: `${WS_URL}/sessions/${sessionId}?token=${encodeURIComponent(token)}`,
+      url: `${WS_URL}/sessions/${sessionId}`,
+      // The token rides in the subprotocol header (never in the URL) and is re-read on every
+      // reconnect, so a refreshed token is used without tearing the socket down.
+      protocols: () => authProtocols(getToken()),
       dispatch,
       onStatus: notify,
     });
@@ -71,7 +76,7 @@ export function useSessionSocket(
       if (holder.client === client) holder.client = null;
       notify();
     };
-  }, [enabled, sessionId, token]);
+  }, [enabled, sessionId, hasToken]);
 
   const subscribeStatus = useCallback((listener: () => void) => {
     const listeners = holderRef.current.statusListeners;

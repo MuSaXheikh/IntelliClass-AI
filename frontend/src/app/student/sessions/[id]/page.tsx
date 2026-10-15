@@ -10,7 +10,7 @@ import { OnDeviceChip } from "@/components/classroom/OnDeviceChip";
 import { SlideImage } from "@/components/classroom/SlideImage";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
-import { useSessionSocket } from "@/hooks/useSessionSocket";
+import { useSessionSocket, type SocketStatus } from "@/hooks/useSessionSocket";
 import { useVisionPipeline } from "@/hooks/useVisionPipeline";
 import { readJoinInfo, useJoinInfo, writeJoinInfo } from "@/lib/joinStore";
 import { playNudgeSound } from "@/lib/sound";
@@ -22,6 +22,14 @@ const VideoStage = dynamic(
 );
 
 const LOW_CONFIDENCE = 0.5;
+const STATUS_LABEL: Record<SocketStatus, string> = {
+  idle: "idle",
+  connecting: "connecting",
+  open: "live",
+  reconnecting: "reconnecting…",
+  rejected: "refused",
+  closed: "closed",
+};
 
 export default function StudentLiveRoomPage() {
   const { id: sessionId } = useParams<{ id: string }>();
@@ -68,10 +76,31 @@ export default function StudentLiveRoomPage() {
 
   const reply = (response: NudgeResponse) => {
     if (!nudge) return;
-    socket.send("nudge.reply", { nudge_id: nudge.nudge_id, response });
+    if (!socket.send("nudge.reply", { nudge_id: nudge.nudge_id, response })) {
+      toast.push({
+        kind: "error",
+        title: "Not connected right now",
+        description: "Your reply was not sent. Try again in a moment.",
+      });
+      return;
+    }
     setNudge(null);
   };
 
+  if (ended) {
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="text-xl font-bold">Live class</h1>
+        <div className="rounded-card border border-line bg-surface p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+          The class has ended. Your private attention and participation summary is under{" "}
+          <Link href="/student/summary" className="text-primary underline dark:text-green-300">
+            My summary
+          </Link>
+          .
+        </div>
+      </div>
+    );
+  }
   if (!join) return <Spinner label="Joining class" />;
 
   const slideCount = join.session.slide_count;
@@ -86,16 +115,20 @@ export default function StudentLiveRoomPage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold">Live class</h1>
         <span className="text-xs text-ink-muted dark:text-slate-400">
-          connection: {socket.status}
+          connection: {STATUS_LABEL[socket.status]}
         </span>
       </header>
 
       {nudge && <NudgeBanner nudge={nudge} onReply={reply} />}
-      {ended && (
-        <div className="rounded-card border border-line bg-surface p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-          The class has ended. Your private attention and participation summary is under{" "}
-          <Link href="/student/summary" className="text-primary underline dark:text-green-300">
-            My summary
+      {socket.status === "rejected" && (
+        <div
+          className="rounded-card border border-red-200 bg-surface p-4 text-sm dark:border-red-900/60 dark:bg-slate-900"
+          role="alert"
+        >
+          This class is no longer accepting your connection: your sign-in may have expired or the
+          class has ended. Open it again from{" "}
+          <Link href="/student" className="text-primary underline dark:text-green-300">
+            your classes
           </Link>
           .
         </div>

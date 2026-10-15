@@ -23,7 +23,7 @@ Status: `todo` · `doing` · `done` · `blocked`
 
 | ID | Task | Owner | Status |
 |----|------|-------|--------|
-| SET-05 | Docker Compose dev environment (api, redis, db) and `.env.example` | M3 | done |
+| SET-05 | Docker Compose stack (db, migrate job, api; redis behind a profile) and `.env.example` | M3 | done (exercised 2026-10-16) |
 | SET-06 | Scaffold Next.js (TS strict, Tailwind) and FastAPI (Pydantic, SQLAlchemy, Alembic) | M1/M2 | done |
 | SET-07 | Linters, formatters, type-checkers across repo | M3 | done |
 | DEP-01 | GitHub Actions CI: lint, type-check, test, build | M3 | done |
@@ -71,7 +71,7 @@ Status: `todo` · `doing` · `done` · `blocked`
 | FE-12 | On-device screen sampler: pHash change filter → tesseract.js OCR → token similarity vs. slide text; send only a score | M1 | todo |
 | FE-10 | Ranked/grouped alert list with Nudge popover | M1 | done |
 | FE-13 | Student nudge receiver: sound, banner, one-tap replies | M1 | done |
-| BE-09 | Screen Compliance service: accept similarity scores (or server-side OCR only as the comparison experiment) | M2 | todo |
+| BE-09 | Screen Compliance service: accept similarity scores (or server-side OCR only as the comparison experiment) | M1 (Ahmad, with FE-12) | todo |
 | BE-10 | Alert Engine: confidence + persistence + cooldown + grouping + severity | M2 | done |
 | BE-11 | Private nudge: single-student routing, rate limit, audit log, reply endpoint | M2 | done |
 | BE-12 | Audit logging for data views and nudges | M2 | done |
@@ -100,7 +100,7 @@ Status: `todo` · `doing` · `done` · `blocked`
 
 | ID | Task | Owner | Status |
 |----|------|-------|--------|
-| DEP-02 | Dockerise all services; full Docker Compose | M3 | todo |
+| DEP-02 | Dockerise all services; full Docker Compose | M3 | doing (backend + db + migrations done 2026-10-16; frontend stays on Vercel) |
 | DEP-03 | Deploy: Vercel (frontend), VM (backend + AI), Supabase, LiveKit | M3 | todo |
 | DEP-04 | CD from `main`, secrets management | M3 | todo |
 | DEP-05 | Health checks and monitoring | M3 | todo |
@@ -117,11 +117,11 @@ Status: `todo` · `doing` · `done` · `blocked`
 | ID | Task | Owner | Status |
 |----|------|-------|--------|
 | TST-02 | Vitest unit tests for hooks/components | M1 | done |
-| TST-03 | Playwright E2E: login → join → alert → nudge → reply | M3 | todo |
+| TST-03 | Playwright E2E: login → join → alert → nudge → reply | M1 (Ahmad) | todo |
 | TST-04 | Security checks: RBAC, rate limits, JWT expiry, input validation | M2 | todo |
-| TST-07 | Privacy audit: no video/screenshots in DB, logs, storage | M3 | todo |
+| TST-07 | Privacy audit: no video/screenshots in DB, logs, storage | M1 (Ahmad) + M4 (checklist) | todo |
 | TST-09 | Load tests (k6) at 10/25/50/100 users | M3 | todo |
-| TST-10 | Usability sessions with real teachers/students | M1/M3 | todo |
+| TST-10 | Usability sessions with real teachers/students | M4 (Sohaib) + M1 | todo |
 | AI-10 | On-device vs. server inference experiment | M1/M3 | todo |
 
 ## Phase 8: Documentation & Final Launch (weeks 36–39)
@@ -141,6 +141,7 @@ Status: `todo` · `doing` · `done` · `blocked`
 | PM-02 | Schedule and prepare the 2-week sprint demos for the supervisor; collect feedback | M4 | todo |
 | AI-11 | Participant recruitment, recording sessions and clip labelling spreadsheet for AI-02/AI-03 | M4 (spec: M3) | todo |
 | TST-11 | Manual acceptance test each sprint on a real phone and laptop; bugs filed as GitHub issues | M4 | todo |
+| TST-12 | Full-project review and hardening (session lifetime, socket auth, atomic decks, audit gaps, compose) | M2 | done (2026-10-16) |
 
 ## Open team decisions
 1. ~~Fourth member allocation~~ Resolved 2026-10-14: see `task_split.md` (Musa backend + DevOps, Ahmad frontend, Faraz ML, Sohaib data/docs/PM).
