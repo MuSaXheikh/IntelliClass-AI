@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ScheduleList } from "@/components/schedule/ScheduleList";
+import { ScheduleTable } from "@/components/schedule/ScheduleTable";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TextArea } from "@/components/ui/Input";
@@ -72,15 +72,11 @@ export default function InstructorSchedulePage() {
     }
   };
 
-  const downloadTemplate = async () => {
+  const download = async (path: string, filename: string) => {
     try {
-      await api.download("/schedule/template.xlsx", "intelliclass-schedule-template.xlsx");
+      await api.download(path, filename);
     } catch (caught: unknown) {
-      toast.push({
-        kind: "error",
-        title: "Could not download the template",
-        description: describe(caught),
-      });
+      toast.push({ kind: "error", title: "Download failed", description: describe(caught) });
     }
   };
 
@@ -163,8 +159,22 @@ export default function InstructorSchedulePage() {
             />
             Replace all upcoming dates of the classes in this sheet
           </label>
-          <Button variant="secondary" size="sm" onClick={() => void downloadTemplate()}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              void download("/schedule/template.xlsx", "intelliclass-schedule-template.xlsx")
+            }
+          >
             Download template
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={!entries || entries.length === 0}
+            onClick={() => void download("/schedule/export.xlsx", "intelliclass-schedule.xlsx")}
+          >
+            Download current schedule as Excel
           </Button>
         </div>
         {uploading && <Spinner label="Reading the sheet" />}
@@ -186,7 +196,7 @@ export default function InstructorSchedulePage() {
       {entries === null ? (
         <Spinner label="Loading schedule" />
       ) : (
-        <ScheduleList
+        <ScheduleTable
           entries={entries}
           today={today}
           busyId={busyId}

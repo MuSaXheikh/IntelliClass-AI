@@ -59,6 +59,23 @@ async def upload_schedule(
     return result
 
 
+@router.get("/export.xlsx")
+def export_schedule(
+    start: date | None = Query(default=None, alias="from"),
+    end: date | None = Query(default=None, alias="to"),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    """The caller's schedule as an Excel workbook, in the format the upload accepts."""
+    entries = schedule.entries_for(db, user, schedule.today_in(settings), start, end)
+    return Response(
+        content=schedule.export_xlsx(entries),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="intelliclass-schedule.xlsx"'},
+    )
+
+
 @router.get("/template.xlsx")
 def schedule_template(
     user: User = Depends(require_roles(Role.INSTRUCTOR)),

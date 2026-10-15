@@ -346,6 +346,35 @@ def restore_entry(entry: ScheduleEntry, today: date) -> None:
     entry.cancelled_at = None
 
 
+def export_xlsx(entries: list[ScheduleEntryOut]) -> bytes:
+    """The schedule as a workbook in the upload format (plus status columns, which uploads ignore),
+    so an instructor can download, edit and upload it again."""
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Schedule"
+    sheet.append([*TEMPLATE_COLUMNS, "class", "status", "cancel_reason"])
+    for e in entries:
+        sheet.append(
+            [
+                e.course_code,
+                e.scheduled_date.isoformat(),
+                e.start_time.strftime("%H:%M"),
+                e.end_time.strftime("%H:%M") if e.end_time else "",
+                e.topic,
+                e.location,
+                e.class_name,
+                e.status,
+                e.cancel_reason or "",
+            ]
+        )
+    for column, width in zip("ABCDEFGHI", (14, 12, 8, 8, 32, 18, 28, 11, 30), strict=True):
+        sheet.column_dimensions[column].width = width
+    sheet.freeze_panes = "A2"
+    out = io.BytesIO()
+    workbook.save(out)
+    return out.getvalue()
+
+
 def template_xlsx(course_codes: list[str], today: date) -> bytes:
     """A workbook with the expected header row and two example rows for the instructor's classes."""
     workbook = openpyxl.Workbook()

@@ -173,3 +173,29 @@ def test_template_download(
     ) > date.today() - timedelta(days=1)
     # the template uploads as it is, so a teacher can start from the examples
     assert _upload(client, instructor[0], res.content)["added"] == 2
+
+
+def test_export_round_trips_through_upload(
+    client: TestClient, live_session: dict, instructor: tuple[str, dict], student: tuple[str, dict]
+) -> None:
+    itoken, _ = instructor
+    day = (today_in(get_settings()) + timedelta(days=9)).isoformat()
+    _upload(client, itoken, _xlsx([["CS-401", day, "10:00", "11:00", "Exported", "Lab 2"]]))
+    res = client.get("/api/v1/schedule/export.xlsx", headers=auth(itoken))
+    assert res.status_code == 200 and res.content[:2] == b"PK"
+    sheet = openpyxl.load_workbook(io.BytesIO(res.content)).active
+    header = [c.value for c in sheet[1]]
+    assert header[:6] == ["course_code", "date", "start", "end", "topic", "location"]
+    assert [c.value for c in sheet[2]][:6] == ["CS-401", day, "10:00", "11:00", "Exported", "Lab 2"]
+    # uploading the export again changes nothing
+    assert _upload(client, itoken, res.content) == {
+        "applied": True,
+        "added": 0,
+        "updated": 0,
+        "removed": 0,
+        "errors": [],
+    }
+    # students get their own view as a sheet too
+    theirs = client.get("/api/v1/schedule/export.xlsx", headers=auth(student[0]))
+    assert theirs.status_code == 200
+    assert openpyxl.load_workbook(io.BytesIO(theirs.content)).active.max_row == 2
