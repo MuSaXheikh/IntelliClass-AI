@@ -266,3 +266,31 @@ export interface SessionSummaryRow {
 export interface StudentSummary {
   sessions: SessionSummaryRow[];
 }
+
+// ---- settings (v1.1) -------------------------------------------------------------------
+
+export interface AlertPreferences {
+  drowsy_min_seconds: number;
+  lookaway_min_seconds: number;
+  noface_min_seconds: number;
+  camera_off_min_seconds: number;
+  screen_grace_seconds: number;
+  alert_cooldown_seconds: number;
+  alert_confidence_threshold: number;
+  nudge_rate_limit: number;
+}
+
+export interface AlertPreferencesResponse {
+  values: AlertPreferences;
+  defaults: AlertPreferences;
+  customised: boolean;
+}
+
+export interface ProfileUpdateRequest {
+  full_name: string;
+}
+
+export interface PasswordChangeRequest {
+  current_password: string;
+  new_password: string;
+}

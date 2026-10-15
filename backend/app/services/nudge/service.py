@@ -21,12 +21,13 @@ class NudgeRateLimiter:
         self.limit, self.window, self._clock = limit, window_seconds, clock
         self._sent: dict[tuple[str, str], deque[float]] = defaultdict(deque)
 
-    def allow(self, session_id: str, student_id: str) -> bool:
+    def allow(self, session_id: str, student_id: str, limit: int | None = None) -> bool:
+        limit = self.limit if limit is None else limit
         now = self._clock()
         bucket = self._sent[(session_id, student_id)]
         while bucket and now - bucket[0] > self.window:
             bucket.popleft()
-        if len(bucket) >= self.limit:
+        if len(bucket) >= limit:
             return False
         bucket.append(now)
         return True
@@ -46,9 +47,10 @@ class NudgeService:
         receiver: User,
         message: str,
         alert_id: str | None,
+        limit: int | None = None,
     ) -> Nudge:
         """Create the nudge row and audit entry. Caller commits and delivers over the socket."""
-        if not self.limiter.allow(session.id, receiver.id):
+        if not self.limiter.allow(session.id, receiver.id, limit):
             raise ApiError(429, "NUDGE_RATE_LIMITED", "Too many nudges to this student; wait a bit")
         alert = self._acknowledge_alert(db, session, receiver, alert_id)
         nudge = Nudge(
