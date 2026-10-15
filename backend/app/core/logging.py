@@ -9,3 +9,5 @@ def configure_logging(level: int = logging.INFO) -> None:
         level=level,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+    # One line per Supabase Storage request is noise at INFO; errors still surface.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
