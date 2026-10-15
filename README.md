@@ -18,9 +18,13 @@ A web classroom that analyses each consenting student's webcam **inside their ow
 ## Quick start (local)
 
 ```bash
+# database: local Supabase in Docker (needs Docker and the Supabase CLI)
+cd backend && supabase start                       # prints DB_URL; Studio at http://127.0.0.1:54323
+
 # backend
-cd backend && uv sync && cp .env.example .env
-uv run python -m scripts.seed                      # demo accounts + class + slides
+uv sync && cp .env.example .env                    # set DATABASE_URL from DB_URL and a random JWT_SECRET
+uv run alembic upgrade head                        # create the tables
+uv run python -m scripts.seed --instructor-email you@uni.edu --instructor-name "Your Name" --roster roster.csv
 uv run uvicorn app.main:app --reload --port 8000
 
 # frontend (new terminal)
@@ -28,8 +32,8 @@ cd frontend && nvm use && pnpm install && cp .env.local.example .env.local
 pnpm dev                                           # http://localhost:3000
 ```
 
-Demo accounts (password `Demo1234!`): instructor `ayesha@demo.edu`, students `hamza@demo.edu` … see `backend/scripts/seed.py`.
-To populate the dashboard without six webcams: `uv run python -m scripts.simulate_students` after starting a class. Full walkthrough in `docs/demo.md`.
+No accounts are built in. The seed takes an instructor and a `roster.csv` of students (one `email,full_name,roll_no` per line, git-ignored) and prints a generated password once; pass `--password` to choose one. SQLite still works for a quick trial (`DATABASE_URL=sqlite:///./intelliclass.db`).
+To populate the dashboard without six webcams: `uv run python -m scripts.simulate_students --roster roster.csv --password <seed password>` after starting a class. Full walkthrough in `docs/demo.md`.
 
 ## Live video (optional)
 

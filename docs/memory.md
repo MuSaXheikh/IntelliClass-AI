@@ -33,6 +33,7 @@
 | D15 | Students **do not publish webcam video** to LiveKit; the camera is consumed only by the local vision worker. Only the instructor publishes audio/video | Bandwidth, LiveKit quota, and makes "no video leaves the device" true at the transport level |
 | D16 | Event fan-out uses an **in-process broker** by default; Redis pub/sub only when the API runs more than one replica | Upstash free tier is 500k commands/month; one 100-student class would exhaust it |
 | D17 | The vision worker is driven by a **Web Worker timer** and `MediaStreamTrackProcessor`, never `requestAnimationFrame` | Chrome freezes rAF and throttles page timers in hidden tabs, which is exactly when the signal matters |
+| D18 | Dev database is **Supabase local** (`supabase start` in `backend/`, config committed, analytics off); the schema comes **only from Alembic**; **no accounts or passwords in the repo**: the seed takes a roster and prints a generated password, `JWT_SECRET` is required and validated, compose has no default DB password | Same engine as production (Postgres + pgvector), reproducible for all four members, nothing secret in git |
 
 ## 3. Tech Stack (Quick Reference)
 
@@ -157,9 +158,9 @@ Message envelope: `{ "type": "...", "payload": { ... }, "ts": "ISO-8601" }`. The
 
 ```
 # backend/.env.example
-DATABASE_URL=postgresql://...        # Supabase
+DATABASE_URL=postgresql+psycopg://postgres:<pw>@127.0.0.1:54322/postgres   # local Supabase DB_URL; cloud later
 REDIS_URL=rediss://...               # Upstash
-JWT_SECRET=change_me
+JWT_SECRET=<random, 32+ chars, required>
 JWT_EXPIRE_MINUTES=120
 LIVEKIT_URL=wss://<project>.livekit.cloud
 LIVEKIT_API_KEY=...
@@ -190,6 +191,7 @@ NEXT_PUBLIC_LIVEKIT_URL=wss://<project>.livekit.cloud
 | Date | Update |
 |------|--------|
 | 2026-10 | Proposal approved; project docs generated; setup phase beginning |
+| 2026-10-15 | Local Supabase stack configured (`backend/supabase/config.toml`, project `intelliclass`); Alembic migrations applied on Postgres including pgvector; seed and simulator take a roster and password at run time and the demo credentials were removed from code and docs; `JWT_SECRET` is required; compose no longer defaults the DB password (D18). Four-member split in `task_split.md`; ERD in `erd.md`. |
 | 2026-10-13 (pm) | Two feature branches pushed, not merged: `feature/fe-report-pages` (report/summary pages, sessions endpoint, timeline) and `feature/livekit-video` (instructor publish token; LiveKit Cloud project `intelliclass-ai-xgvhr235`, credentials in `backend/.env` only). |
 | 2026-10-13 | Proposal resubmitted as `docs/intelli-class-ai-perposal.pdf` (Turnitin AI score under the 20% threshold; the earlier rebuild scored 32%). Content aligned with D13–D17. Earlier proposal versions remain in git history only. |
 | 2026-10-09 (pm) | **Vertical slice working end to end** on localhost and pushed to `github.com/MuSaXheikh/IntelliClass-AI`: auth, classes, enrolment, PDF slides, consent-gated join, WS gateway, rule-based classifier, alert engine (persistence/cooldown/grouping), private nudge + audit, reports; Next.js instructor/student rooms with the on-device MediaPipe worker. Runs with **no internet** (model + WASM + Swagger vendored, system fonts). Backend 25 tests, frontend 26 tests, CI green. Demo: `docs/demo.md`. |

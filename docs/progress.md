@@ -100,13 +100,13 @@ The proposal was resubmitted on 13 October (`docs/intelli-class-ai-perposal.pdf`
 
 ```bash
 # terminal 1
-cd backend && uv sync && uv run python -m scripts.seed && uv run uvicorn app.main:app --port 8000
+cd backend && supabase start && uv sync && uv run alembic upgrade head && uv run python -m scripts.seed --instructor-email you@uni.edu --instructor-name "Your Name" --roster roster.csv && uv run uvicorn app.main:app --port 8000
 # terminal 2
 cd frontend && source ~/.nvm/nvm.sh && nvm use 22 && pnpm install && pnpm build && pnpm start
 # terminal 3 (after Start Live Class)
-cd backend && uv run python -m scripts.simulate_students --minutes 3
+cd backend && uv run python -m scripts.simulate_students --roster roster.csv --password <seed password> --minutes 3
 ```
-Logins: `ayesha@demo.edu` (instructor), `hamza@demo.edu` … (students), password `Demo1234!`. Full walkthrough: `docs/demo.md`.
+Logins: the instructor and roster you passed to the seed; it prints the password once. Full walkthrough: `docs/demo.md`.
 
 ---
 
