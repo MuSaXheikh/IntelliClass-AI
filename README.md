@@ -22,7 +22,7 @@ A web classroom that analyses each consenting student's webcam **inside their ow
 cd backend && supabase start                       # prints DB_URL; Studio at http://127.0.0.1:54323
 
 # backend
-uv sync && cp .env.example .env                    # set DATABASE_URL from DB_URL and a random JWT_SECRET
+uv sync && cp .env.example .env                    # DATABASE_URL + SUPABASE_SERVICE_KEY from `supabase status`, random JWT_SECRET
 uv run alembic upgrade head                        # create the tables
 uv run python -m scripts.seed --instructor-email you@uni.edu --instructor-name "Your Name" --roster roster.csv
 uv run uvicorn app.main:app --reload --port 8000
