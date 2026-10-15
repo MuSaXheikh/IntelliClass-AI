@@ -21,7 +21,7 @@ def deck_prefix(class_id: str) -> str:
 def replace_deck(db: Session, storage: ObjectStorage, class_id: str, pdf_bytes: bytes) -> int:
     """Replace the class deck with the pages of this PDF. Returns slide count. Caller commits."""
     if not pdf_bytes.startswith(b"%PDF"):
-        raise ApiError(400, "INVALID_FILE", "Only PDF decks are accepted (export PPT to PDF)")
+        raise ApiError(400, "INVALID_FILE", "Deck could not be read as a PDF")
     storage.delete_prefix(deck_prefix(class_id))
     db.execute(delete(Slide).where(Slide.class_id == class_id))
     count = _render_pages(db, storage, class_id, pdf_bytes)

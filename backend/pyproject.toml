@@ -27,6 +27,7 @@ dev = [
   "ruff>=0.6",
   "black>=24.8",
   "mypy>=1.11",
+  "python-pptx>=1.0.2",
 ]
 
 [tool.black]

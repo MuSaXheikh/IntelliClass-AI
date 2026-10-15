@@ -1,6 +1,7 @@
 """Classes, enrolment, slides and starting a live session."""
 
 from fastapi import APIRouter, Depends, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from app.api.deps import (
     live_session_for_class,
 )
 from app.core.audit import record_audit
+from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
 from app.core.rbac import get_current_user, require_roles
 from app.db.base import new_id
@@ -23,11 +25,12 @@ from app.models.user import Role, User
 from app.schemas.auth import UserOut
 from app.schemas.classes import ClassCreate, ClassOut, EnrolIn, EnrolOut, SlideOut, SlideUploadOut
 from app.schemas.sessions import SessionOut
+from app.services.slides import convert
 from app.services.slides import service as slides
 from app.services.storage.base import ObjectStorage
 
 router = APIRouter(prefix="/classes", tags=["classes"])
-MAX_PDF_BYTES = 40 * 1024 * 1024
+MAX_DECK_BYTES = 40 * 1024 * 1024
 
 
 def _student_count(db: Session, class_id: str) -> int:
@@ -137,12 +140,20 @@ async def upload_slides(
     cls: Class = Depends(get_owned_class),
     db: Session = Depends(get_db),
     storage: ObjectStorage = Depends(get_storage_dep),
+    settings: Settings = Depends(get_settings),
 ) -> SlideUploadOut:
-    """Replace the deck with the pages of a PDF."""
-    data = await file.read(MAX_PDF_BYTES + 1)
-    if len(data) > MAX_PDF_BYTES:
-        raise ApiError(413, "FILE_TOO_LARGE", "PDF must be under 40 MB")
-    count = slides.replace_deck(db, storage, cls.id, data)
+    """Replace the deck with the pages of a PDF, PowerPoint or ODP file."""
+    data = await file.read(MAX_DECK_BYTES + 1)
+    if len(data) > MAX_DECK_BYTES:
+        raise ApiError(413, "FILE_TOO_LARGE", "Deck must be under 40 MB")
+    pdf = await run_in_threadpool(
+        convert.to_pdf,
+        data,
+        file.filename or "",
+        settings.soffice_path,
+        settings.slide_convert_timeout_seconds,
+    )
+    count = slides.replace_deck(db, storage, cls.id, pdf)
     db.commit()
     return SlideUploadOut(slide_count=count)
 
