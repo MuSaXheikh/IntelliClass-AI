@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     supabase_url: str | None = None  # API URL (http://127.0.0.1:54321 locally)
     supabase_service_key: str | None = None  # service-role key, server-side only
     supabase_bucket: str = "slides"
+    # PowerPoint/ODP decks are converted to PDF with LibreOffice before rendering
+    soffice_path: str = "soffice"
+    slide_convert_timeout_seconds: float = 120.0
 
     livekit_url: str | None = None
     livekit_api_key: str | None = None

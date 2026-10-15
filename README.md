@@ -33,6 +33,7 @@ pnpm dev                                           # http://localhost:3000
 ```
 
 No accounts are built in. The seed takes an instructor and a `roster.csv` of students (one `email,full_name,roll_no` per line, git-ignored) and prints a generated password once; pass `--password` to choose one. SQLite still works for a quick trial (`DATABASE_URL=sqlite:///./intelliclass.db`).
+Instructors upload decks as PDF, PowerPoint (.pptx, .ppt) or OpenDocument (.odp); non-PDF decks are converted with LibreOffice, so install `libreoffice-impress` on the machine running the backend (the Dockerfile does).
 To populate the dashboard without six webcams: `uv run python -m scripts.simulate_students --roster roster.csv --password <seed password>` after starting a class. Full walkthrough in `docs/demo.md`.
 
 ## Live video (optional)

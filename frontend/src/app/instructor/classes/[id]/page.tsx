@@ -162,10 +162,10 @@ export default function ClassDetailPage() {
         <Card>
           <h2 className="mb-2 text-lg font-semibold">Slides ({slides.length})</h2>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Upload lecture slides (PDF)</span>
+            <span className="font-medium">Upload lecture slides (PDF or PowerPoint)</span>
             <input
               type="file"
-              accept="application/pdf"
+              accept=".pdf,.ppt,.pptx,.odp,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.presentation"
               disabled={busy === "upload"}
               onChange={(e) => void upload(e.target.files?.[0])}
               className="text-sm"
