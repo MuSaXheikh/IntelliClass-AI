@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     status_hold_seconds: float = 1.0  # a condition must last this long before the badge changes
     session_idle_minutes: float = 45.0  # a live session nobody is connected to ends itself
     attended_min_seconds: float = 60.0  # connected time needed to count as having attended
+    schedule_timezone: str = "Asia/Karachi"  # 'today' for the cancel-before-the-day rule
 
     # Alert engine
     alert_confidence_threshold: float = 0.60

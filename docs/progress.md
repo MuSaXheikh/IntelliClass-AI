@@ -135,3 +135,8 @@ Three independent reviews of the whole project (backend, frontend, infrastructur
 - **Decks.** Rendering and uploads run off the event loop; a replacement renders into a fresh folder and swaps rows only when every page is stored, so a storage failure leaves the old deck intact; slide images revalidate by ETag.
 - **Inputs and privacy.** Feature packets reject NaN/Infinity; passwords over bcrypt's 72 bytes get a clear 422; the instructor's roster stream, student list and REST feedback are audit-logged; a student socket requires a prior consent record; attendance needs real connected time.
 - **Deployment.** The compose stack starts on non-colliding ports with a one-shot migration job and an API healthcheck; the image no longer copies the virtualenv or `.env`; the test suite never touches the developer's real bucket.
+
+## Added 16 October: schedule and PDF report
+
+- **Schedule.** Instructors publish the plan by uploading an Excel or CSV sheet (template provided): course code, date, start, optional end, topic and location. Rows for the same class, date and start update in place; a "replace upcoming" option drops dates no longer in the sheet. The sheet is applied all-or-nothing with row-numbered errors. Enrolled students see the schedule for their classes. A class can be cancelled, with a reason students see, or restored, only while today (university time) is before its date.
+- **PDF report.** Every class report can be downloaded as an A4 PDF rendered on the server (tiles, timeline, alerts by type, per-student table), with no images of anyone.

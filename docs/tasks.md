@@ -141,6 +141,8 @@ Status: `todo` · `doing` · `done` · `blocked`
 | PM-02 | Schedule and prepare the 2-week sprint demos for the supervisor; collect feedback | M4 | todo |
 | AI-11 | Participant recruitment, recording sessions and clip labelling spreadsheet for AI-02/AI-03 | M4 (spec: M3) | todo |
 | TST-11 | Manual acceptance test each sprint on a real phone and laptop; bugs filed as GitHub issues | M4 | todo |
+| BE-21 | Class schedule: xlsx/csv upload (merge or replace), template, visibility by enrolment, cancel/restore only before the day | M2 | done (2026-10-16) |
+| FE-22 | Schedule pages for instructor (upload, cancel with reason, restore) and student | M1 | done (2026-10-16) |
 | BE-20 | Class report downloadable as PDF (server-rendered with PyMuPDF; numbers and charts only) | M2 | done (2026-10-16) |
 | TST-12 | Full-project review and hardening (session lifetime, socket auth, atomic decks, audit gaps, compose) | M2 | done (2026-10-16) |
 

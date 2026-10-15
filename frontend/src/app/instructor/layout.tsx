@@ -6,6 +6,7 @@ import { AppShell } from "@/components/layout/AppShell";
 
 const NAV = [
   { href: "/instructor", label: "Classes" },
+  { href: "/instructor/schedule", label: "Schedule" },
   { href: "/instructor/reports", label: "Reports" },
   { href: "/instructor/settings", label: "Settings" },
 ];

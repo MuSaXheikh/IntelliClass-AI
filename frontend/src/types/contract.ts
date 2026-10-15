@@ -295,3 +295,32 @@ export interface PasswordChangeRequest {
   current_password: string;
   new_password: string;
 }
+
+// ---- schedule (v1.1) -------------------------------------------------------------------
+
+export type ScheduleStatus = "scheduled" | "cancelled";
+
+export interface ScheduleEntry {
+  id: string;
+  class_id: string;
+  class_name: string;
+  course_code: string;
+  scheduled_date: string; // YYYY-MM-DD
+  start_time: string; // HH:MM:SS
+  end_time: string | null;
+  topic: string;
+  location: string;
+  status: ScheduleStatus;
+  cancel_reason: string | null;
+  cancelled_at: string | null;
+  can_cancel: boolean;
+  can_restore: boolean;
+}
+
+export interface ScheduleUploadResult {
+  applied: boolean;
+  added: number;
+  updated: number;
+  removed: number;
+  errors: string[];
+}
