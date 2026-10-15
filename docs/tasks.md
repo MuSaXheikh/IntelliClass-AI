@@ -109,6 +109,8 @@ Status: `todo` · `doing` · `done` · `blocked`
 | FE-18 | Accessibility pass, dark mode, responsive polish | M1 | todo |
 | FE-20 | Instructor settings page: profile, password, alert preferences | M1 | done (2026-10-16) |
 | BE-18 | Profile/password endpoints; per-instructor alert preferences applied per session and to the nudge limit | M2 | done (2026-10-16) |
+| BE-19 | Delete class (service-level cascade) and remove deck; deck changes blocked while live; slide images revalidate by ETag | M2 | done (2026-10-16) |
+| FE-21 | Class page: replace or remove deck, delete class with confirmation, versioned slide images | M1 | done (2026-10-16) |
 
 ## Phase 7: Testing & Evaluation (weeks 33–37)
 

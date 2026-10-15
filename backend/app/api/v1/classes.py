@@ -1,6 +1,6 @@
 """Classes, enrolment, slides and starting a live session."""
 
-from fastapi import APIRouter, Depends, UploadFile, status
+from fastapi import APIRouter, Depends, Request, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from sqlalchemy import func, select
@@ -25,11 +25,19 @@ from app.models.user import Role, User
 from app.schemas.auth import UserOut
 from app.schemas.classes import ClassCreate, ClassOut, EnrolIn, EnrolOut, SlideOut, SlideUploadOut
 from app.schemas.sessions import SessionOut
+from app.services.classroom import service as classroom
 from app.services.slides import convert
 from app.services.slides import service as slides
 from app.services.storage.base import ObjectStorage
 
 router = APIRouter(prefix="/classes", tags=["classes"])
+
+
+def _require_not_live(db: Session, cls: Class) -> None:
+    if live_session_for_class(db, cls.id) is not None:
+        raise ApiError(409, "SESSION_LIVE", "End the live class before changing it")
+
+
 MAX_DECK_BYTES = 40 * 1024 * 1024
 
 
@@ -142,7 +150,8 @@ async def upload_slides(
     storage: ObjectStorage = Depends(get_storage_dep),
     settings: Settings = Depends(get_settings),
 ) -> SlideUploadOut:
-    """Replace the deck with the pages of a PDF, PowerPoint or ODP file."""
+    """Replace the deck with the pages of a PDF, PowerPoint or ODP file (not while live)."""
+    _require_not_live(db, cls)
     data = await file.read(MAX_DECK_BYTES + 1)
     if len(data) > MAX_DECK_BYTES:
         raise ApiError(413, "FILE_TOO_LARGE", "Deck must be under 40 MB")
@@ -163,24 +172,60 @@ def list_slides(
     cls: Class = Depends(get_participant_class), db: Session = Depends(get_db)
 ) -> list[SlideOut]:
     return [
-        SlideOut(index=s.index, text_preview=s.text[:160]) for s in slides.list_slides(db, cls.id)
+        SlideOut(id=s.id, index=s.index, text_preview=s.text[:160])
+        for s in slides.list_slides(db, cls.id)
     ]
+
+
+@router.delete("/{class_id}/slides", status_code=status.HTTP_204_NO_CONTENT)
+def remove_deck(
+    cls: Class = Depends(get_owned_class),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    storage: ObjectStorage = Depends(get_storage_dep),
+) -> Response:
+    """Delete every slide of the class (not while a session is live)."""
+    _require_not_live(db, cls)
+    slides.clear_deck(db, storage, cls.id)
+    record_audit(db, user.id, "slides.remove", "class", cls.id)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{class_id}/slides/{index}/image")
 def slide_image(
     index: int,
+    request: Request,
     cls: Class = Depends(get_participant_class),
     db: Session = Depends(get_db),
     storage: ObjectStorage = Depends(get_storage_dep),
 ) -> Response:
-    """The rendered page, read from the store and served only to class participants."""
+    """The rendered page for class participants. ETag = slide row id, so a replaced deck is
+    never served from a browser cache; unchanged pages revalidate with a cheap 304."""
     slide = slides.get_slide(db, cls.id, index)
+    etag = f'"{slide.id}"'
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers={"ETag": etag})
     return Response(
         content=storage.get(slide.image_path),
         media_type="image/png",
-        headers={"Cache-Control": "private, max-age=3600"},
+        headers={"ETag": etag, "Cache-Control": "private, no-cache"},
     )
+
+
+@router.delete("/{class_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_class(
+    cls: Class = Depends(get_owned_class),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    storage: ObjectStorage = Depends(get_storage_dep),
+) -> Response:
+    """Delete the class with its roster, deck, sessions and their records (not while live)."""
+    _require_not_live(db, cls)
+    record_audit(db, user.id, "class.delete", "class", cls.id)
+    classroom.delete_class(db, storage, cls)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{class_id}/sessions", response_model=SessionOut, status_code=status.HTTP_201_CREATED)
