@@ -77,6 +77,7 @@ export interface Nudge {
 }
 
 export interface SlideInfo {
+  id: string;
   index: number;
   text_preview: string;
 }

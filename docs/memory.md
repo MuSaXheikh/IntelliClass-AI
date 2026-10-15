@@ -157,6 +157,8 @@ Message envelope: `{ "type": "...", "payload": { ... }, "ts": "ISO-8601" }`. The
 - `PATCH /me` `{full_name}` → UserOut. `POST /me/password` `{current_password, new_password}` → 204 (400 `WRONG_PASSWORD` / `SAME_PASSWORD`).
 - `GET|PUT|DELETE /me/alert-preferences` (instructor) → `{values, defaults, customised}`; PUT body = the eight fields with bounds (seconds 2–120, cooldown 10–900, confidence 0.3–0.95, nudges 1–10). Saved values build the `AlertPolicy` for sessions that instructor starts afterwards (`services/preferences`), and cap the nudge rate limit per send.
 
+- `DELETE /classes/{id}` (owner) removes the class with roster, deck, sessions, events, alerts, nudges and replies (audit rows stay); `DELETE /classes/{id}/slides` clears the deck. Both, and deck upload, answer 409 `SESSION_LIVE` while a session is live. `GET /classes/{id}/slides` rows carry `id`; the image route sets `ETag` = slide id with `Cache-Control: private, no-cache` and answers 304 to `If-None-Match`, and the frontend appends `?v=<slide id>` so a replaced deck shows at once.
+
 ## 8. Core Data Model (Tables)
 
 `users`, `classes`, `enrolments`, `sessions`, `slides`, `events`, `alerts`, `nudges`, `alert_feedback`, `instructor_settings`, `transcripts`, `chunks` (with `vector` embedding), `summaries`, `audit_logs`. Diagram: `erd.md`. No table stores images or video.
@@ -202,7 +204,7 @@ NEXT_PUBLIC_LIVEKIT_URL=wss://<project>.livekit.cloud
 | Date | Update |
 |------|--------|
 | 2026-10 | Proposal approved; project docs generated; setup phase beginning |
-| 2026-10-16 | Instructor **Settings page** (`/instructor/settings`): profile name, password change, and per-instructor alert preferences stored in `instructor_settings` and applied to sessions started after saving (policy loader in `LiveSessionManager`, per-send nudge limit). Backend 38 tests, frontend 40. |
+| 2026-10-16 | Instructor **Settings page** (`/instructor/settings`): profile name, password change, and per-instructor alert preferences stored in `instructor_settings` and applied to sessions started after saving (policy loader in `LiveSessionManager`, per-send nudge limit). Backend 40 tests, frontend 40. Class page: replace or remove the deck, delete the class with confirmation; deck changes blocked while live; slide images revalidate by ETag instead of being cached for an hour. |
 | 2026-10-15 | Local Supabase stack configured (`backend/supabase/config.toml`, project `intelliclass`); Alembic migrations applied on Postgres including pgvector; seed and simulator take a roster and password at run time and the demo credentials were removed from code and docs; `JWT_SECRET` is required; compose no longer defaults the DB password (D18). Slide images moved to a private Supabase Storage bucket through a storage adapter with a local-disk fallback (D19). Deck upload now accepts PowerPoint and ODP as well as PDF, converted by LibreOffice headless (BE-04). Four-member split in `task_split.md`; ERD in `erd.md`. |
 | 2026-10-13 (pm) | Two feature branches pushed, not merged: `feature/fe-report-pages` (report/summary pages, sessions endpoint, timeline) and `feature/livekit-video` (instructor publish token; LiveKit Cloud project `intelliclass-ai-xgvhr235`, credentials in `backend/.env` only). |
 | 2026-10-13 | Proposal resubmitted as `docs/intelli-class-ai-perposal.pdf` (Turnitin AI score under the 20% threshold; the earlier rebuild scored 32%). Content aligned with D13–D17. Earlier proposal versions remain in git history only. |
