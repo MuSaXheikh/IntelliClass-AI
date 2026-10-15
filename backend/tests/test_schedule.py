@@ -171,3 +171,5 @@ def test_template_download(
     assert sheet["A2"].value == "CS-401" and date.fromisoformat(
         sheet["B2"].value
     ) > date.today() - timedelta(days=1)
+    # the template uploads as it is, so a teacher can start from the examples
+    assert _upload(client, instructor[0], res.content)["added"] == 2
