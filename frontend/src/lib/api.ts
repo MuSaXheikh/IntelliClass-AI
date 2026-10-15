@@ -60,6 +60,26 @@ export const api = {
     return request<T>(path, { method: "POST", headers: { ...authHeaders() }, body: form });
   },
 
+  put<T>(path: string, body?: unknown): Promise<T> {
+    return request<T>(path, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  },
+
+  patch<T>(path: string, body?: unknown): Promise<T> {
+    return request<T>(path, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  },
+
+  delete<T>(path: string): Promise<T> {
+    return request<T>(path, { method: "DELETE", headers: { ...authHeaders() } });
+  },
+
   /** Fetch a protected binary (slide image) and return an object URL the caller must revoke. */
   async blobUrl(path: string): Promise<string> {
     const response = await fetch(`${API_URL}${path}`, { headers: { ...authHeaders() } });

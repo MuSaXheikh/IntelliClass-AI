@@ -31,6 +31,7 @@ from app.schemas.sessions import JoinIn, JoinOut, SessionOut, SlideSetIn
 from app.services.live.manager import LiveSessionManager
 from app.services.livekit.token import create_join_token
 from app.services.nudge.service import NudgeService
+from app.services.preferences import service as preferences
 from app.services.reports.service import session_report
 from app.services.slides import service as slides
 from app.ws.bus import OutboundBus
@@ -119,7 +120,10 @@ async def nudge_student(
     receiver = db.get(User, body.student_id)
     if receiver is None or not is_enrolled(db, session.class_id, receiver.id):
         raise ApiError(404, "STUDENT_NOT_FOUND", "No such student in this class")
-    nudge = nudges.send(db, session, user, receiver, body.message, body.alert_id)
+    prefs, _ = preferences.effective(db, get_settings(), user.id)
+    nudge = nudges.send(
+        db, session, user, receiver, body.message, body.alert_id, limit=prefs.nudge_rate_limit
+    )
     db.commit()
     payload = {
         "nudge_id": nudge.id,

@@ -7,7 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 const NAV = [
   { href: "/instructor", label: "Classes" },
   { href: "/instructor/reports", label: "Reports", disabled: true },
-  { href: "/instructor/settings", label: "Settings", disabled: true },
+  { href: "/instructor/settings", label: "Settings" },
 ];
 
 export default function InstructorLayout({ children }: { children: ReactNode }) {

@@ -83,9 +83,15 @@ class FeatureResult:
 class LiveSessionManager:
     """Registry of live sessions and the per-session vision/alert pipeline."""
 
-    def __init__(self, settings: Settings, clock: Callable[[], float] = time.monotonic) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        clock: Callable[[], float] = time.monotonic,
+        policy_loader: Callable[[str], AlertPolicy] | None = None,
+    ) -> None:
         self.settings = settings
         self._clock = clock
+        self._policy_loader = policy_loader  # per-session policy (instructor preferences)
         self._classifier = RuleBasedClassifier(VisionThresholds.from_settings(settings))
         self._policy = AlertPolicy.from_settings(settings)
         self._students: dict[str, dict[str, StudentLive]] = {}
@@ -95,8 +101,12 @@ class LiveSessionManager:
 
     def _engine(self, session_id: str) -> AlertEngine:
         if session_id not in self._engines:
-            self._engines[session_id] = AlertEngine(self._policy, self._clock)
+            policy = self._policy_loader(session_id) if self._policy_loader else self._policy
+            self._engines[session_id] = AlertEngine(policy, self._clock)
         return self._engines[session_id]
+
+    def policy(self, session_id: str) -> AlertPolicy:
+        return self._engine(session_id).policy
 
     def _student(self, session_id: str, user_id: str) -> StudentLive | None:
         return self._students.get(session_id, {}).get(user_id)

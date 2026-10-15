@@ -107,6 +107,8 @@ Status: `todo` · `doing` · `done` · `blocked`
 | DEP-06 | Hosting decision: HF Spaces free Docker withdrawn July 2026 → Oracle Cloud Always Free ARM VM (primary) or Azure for Students credit (fallback) | M3 | todo |
 | DEP-07 | Self-hosted LiveKit server on the VM for load tests (Cloud free plan caps at 5,000 participant-minutes/month) | M3 | todo |
 | FE-18 | Accessibility pass, dark mode, responsive polish | M1 | todo |
+| FE-20 | Instructor settings page: profile, password, alert preferences | M1 | done (2026-10-16) |
+| BE-18 | Profile/password endpoints; per-instructor alert preferences applied per session and to the nudge limit | M2 | done (2026-10-16) |
 
 ## Phase 7: Testing & Evaluation (weeks 33–37)
 
