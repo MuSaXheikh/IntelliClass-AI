@@ -152,6 +152,8 @@ def parse_sheet(data: bytes, filename: str) -> tuple[list[ParsedRow], list[str]]
     errors: list[str] = []
     seen: set[tuple[str | None, date, time]] = set()
     for line, row in enumerate(raw[1:], start=2):
+        if cell(row, "date") in (None, "") and cell(row, "start") in (None, ""):
+            continue  # a note or heading row, not a meeting
         scheduled = _parse_date(cell(row, "date"))
         start = _parse_time(cell(row, "start"))
         end_raw = cell(row, "end")
@@ -356,15 +358,14 @@ def template_xlsx(course_codes: list[str], today: date) -> bytes:
     sheet.append(
         [code, (monday + timedelta(days=2)).isoformat(), "09:00", "10:30", "Lecture 2", "Room 12"]
     )
-    sheet.append([])
-    sheet.append(
-        [
-            "Dates as YYYY-MM-DD or DD/MM/YYYY; times as HH:MM or 9:00 AM; "
-            "end, topic and location are optional."
-        ]
-    )
     for column, width in zip("ABCDEF", (14, 14, 10, 10, 32, 18), strict=True):
         sheet.column_dimensions[column].width = width
+    notes = workbook.create_sheet("How to fill")
+    notes.append(["Keep the header row of the Schedule sheet; one meeting per row below it."])
+    notes.append(["course_code: one of your classes' codes (required when you teach several)."])
+    notes.append(["date: YYYY-MM-DD or DD/MM/YYYY. start/end: HH:MM or 9:00 AM; end is optional."])
+    notes.append(["topic and location are optional. Upload the file on the Schedule page."])
+    notes.column_dimensions["A"].width = 90
     out = io.BytesIO()
     workbook.save(out)
     return out.getvalue()
