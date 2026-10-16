@@ -75,5 +75,5 @@ Click **End class**. Open the report: attention %, alerts by type, nudges, justi
 - LiveKit audio/video needs the three LIVEKIT_* variables in `backend/.env`; without them the video stage says "not configured" and everything else still works.
 - Decks can be PDF, PowerPoint or ODP; PowerPoint needs LibreOffice on the backend machine. A deck cannot be changed while the class is live.
 - A live class nobody is connected to ends itself after 45 minutes (`SESSION_IDLE_MINUTES`).
-- Screen-content similarity (OCR) is Phase 4; the wrong-screen signal is the visibility baseline (decision D14).
+- The wrong-screen signal is the tab-visibility baseline (D14) plus, when the student taps "Share screen for the slide check", the on-device OCR similarity (D9). The share is optional and only a score leaves the device.
 - Transcription, summaries and the RAG assistant are Phase 5.

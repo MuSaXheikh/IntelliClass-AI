@@ -13,8 +13,11 @@ from datetime import datetime
 from app.core.config import Settings
 from app.db.base import utcnow
 from app.models.user import User
+from app.schemas.screen import ScreenScoreIn
 from app.services.alert_engine.engine import AlertDecision, AlertEngine, AlertPolicy
 from app.services.alert_engine.states import SEVERITY, State
+from app.services.screen import service as screen
+from app.services.screen.service import ScreenPolicy, ScreenScore
 from app.services.vision_events.classifier import Condition, RuleBasedClassifier, VisionThresholds
 from app.services.vision_events.features import FeatureSmoother, VisionFeatures
 
@@ -54,6 +57,7 @@ class StudentLive:
     since: datetime = field(default_factory=utcnow)
     connected: bool = False
     last_packet_at: float | None = None
+    screen_score: ScreenScore | None = None  # latest on-device slide-similarity score
 
     def snapshot(self) -> StatusSnapshot:
         return StatusSnapshot(
@@ -94,6 +98,7 @@ class LiveSessionManager:
         self._policy_loader = policy_loader  # per-session policy (instructor preferences)
         self._classifier = RuleBasedClassifier(VisionThresholds.from_settings(settings))
         self._policy = AlertPolicy.from_settings(settings)
+        self._screen_policy = ScreenPolicy.from_settings(settings)
         self._students: dict[str, dict[str, StudentLive]] = {}
         self._engines: dict[str, AlertEngine] = {}
 
@@ -160,11 +165,20 @@ class LiveSessionManager:
         now = self._clock()
         live.last_packet_at = now
         conditions = self._classifier.classify(live.smoother.push(packet))
+        conditions = screen.merge(
+            conditions, screen.wrong_screen_condition(live.screen_score, self._screen_policy, now)
+        )
         engine = self._engine(session_id)
         decisions = engine.observe(user_id, conditions, now)
         state, confidence = self._display_state(engine, user_id, conditions, now)
         changed = live.set_state(state, confidence)
         return FeatureResult(live.snapshot() if changed else None, decisions)
+
+    def handle_screen_score(self, session_id: str, user_id: str, message: ScreenScoreIn) -> None:
+        """Remember the student's latest score; it is judged with the next feature packet."""
+        live = self._student(session_id, user_id)
+        if live is not None:
+            live.screen_score = ScreenScore.from_message(message, self._clock())
 
     def _display_state(
         self, engine: AlertEngine, user_id: str, conditions: list[Condition], now: float

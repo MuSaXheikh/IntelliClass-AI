@@ -7,14 +7,23 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { NudgeBanner } from "@/components/classroom/NudgeBanner";
 import { OnDeviceChip } from "@/components/classroom/OnDeviceChip";
+import { ScreenCheckChip } from "@/components/classroom/ScreenCheckChip";
 import { SlideImage } from "@/components/classroom/SlideImage";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
+import { useScreenCompliance } from "@/hooks/useScreenCompliance";
 import { useSessionSocket, type SocketStatus } from "@/hooks/useSessionSocket";
 import { useVisionPipeline } from "@/hooks/useVisionPipeline";
 import { readJoinInfo, useJoinInfo, writeJoinInfo } from "@/lib/joinStore";
 import { playNudgeSound } from "@/lib/sound";
-import type { NudgeDeliverPayload, NudgeResponse, VisionFeaturesPayload } from "@/types/contract";
+import { api } from "@/lib/api";
+import type {
+  NudgeDeliverPayload,
+  NudgeResponse,
+  ScreenScorePayload,
+  SlideInfo,
+  VisionFeaturesPayload,
+} from "@/types/contract";
 
 const VideoStage = dynamic(
   () => import("@/components/classroom/VideoStage").then((m) => m.VideoStage),
@@ -40,7 +49,24 @@ export default function StudentLiveRoomPage() {
   const [liveSlideIndex, setLiveSlideIndex] = useState<number | null>(null);
   const [nudge, setNudge] = useState<NudgeDeliverPayload | null>(null);
   const [ended, setEnded] = useState(false);
+  const [slideTexts, setSlideTexts] = useState<string[] | null>(null);
   const active = Boolean(join) && !ended;
+  const classId = join?.session.class_id ?? null;
+
+  // Slide wording for the optional on-device screen check (never leaves the browser).
+  useEffect(() => {
+    if (!classId) return;
+    let cancelled = false;
+    api
+      .get<SlideInfo[]>(`/classes/${classId}/slides`)
+      .then((slides) => {
+        if (!cancelled) setSlideTexts(slides.map((s) => s.text ?? s.text_preview));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [classId]);
   const socket = useSessionSocket(sessionId, token, { enabled: active });
 
   // Without consent-step join info (fresh tab, expired storage) go back through the consent gate.
@@ -73,6 +99,18 @@ export default function StudentLiveRoomPage() {
   );
 
   const vision = useVisionPipeline({ enabled: active, onPacket: sendPacket });
+  const sendScore = useCallback(
+    (payload: ScreenScorePayload) => {
+      socket.send("screen.score", payload);
+    },
+    [socket],
+  );
+  const screen = useScreenCompliance({
+    enabled: active,
+    slideIndex: liveSlideIndex ?? join?.session.current_slide_index ?? 0,
+    slideTexts,
+    onScore: sendScore,
+  });
 
   const reply = (response: NudgeResponse) => {
     if (!nudge) return;
@@ -143,6 +181,7 @@ export default function StudentLiveRoomPage() {
         <div className="flex flex-col gap-3">
           <VideoStage url={join.livekit_url} token={join.livekit_token} publish={false} />
           <OnDeviceChip status={vision.status} lowConfidence={lowConfidence} />
+          <ScreenCheckChip screen={screen} />
           {vision.error && (
             <p className="text-xs text-red-600" role="alert">
               {vision.error}

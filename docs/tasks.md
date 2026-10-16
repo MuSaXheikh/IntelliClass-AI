@@ -68,10 +68,10 @@ Status: `todo` · `doing` · `done` · `blocked`
 
 | ID | Task | Owner | Status |
 |----|------|-------|--------|
-| FE-12 | On-device screen sampler: pHash change filter → tesseract.js OCR → token similarity vs. slide text; send only a score | M1 | todo |
+| FE-12 | On-device screen sampler: pHash change filter → tesseract.js OCR → token similarity vs. slide text; send only a score | M1 | done (2026-10-17; optional screen share on the student page, assets vendored) |
 | FE-10 | Ranked/grouped alert list with Nudge popover | M1 | done |
 | FE-13 | Student nudge receiver: sound, banner, one-tap replies | M1 | done |
-| BE-09 | Screen Compliance service: accept similarity scores (or server-side OCR only as the comparison experiment) | M1 (Ahmad, with FE-12) | todo |
+| BE-09 | Screen Compliance service: accept similarity scores and feed the alert engine (fresh, readable, low → wrong_screen) | M2 | done (2026-10-17) |
 | BE-10 | Alert Engine: confidence + persistence + cooldown + grouping + severity | M2 | done |
 | BE-11 | Private nudge: single-student routing, rate limit, audit log, reply endpoint | M2 | done |
 | BE-12 | Audit logging for data views and nudges | M2 | done |

@@ -36,6 +36,7 @@ class SlideOut(BaseModel):
     id: str
     index: int
     text_preview: str
+    text: str = ""  # full extracted text, used on the device for the screen check
 
 
 class SlideUploadOut(BaseModel):

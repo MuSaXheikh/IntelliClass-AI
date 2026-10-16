@@ -48,3 +48,10 @@ export const NUDGE_PRESETS = ["Please focus", "Are you there?"] as const;
 export const AUTH_TOKEN_KEY = "intelliclass.token";
 export const AUTH_USER_KEY = "intelliclass.user";
 export const JOIN_INFO_KEY_PREFIX = "intelliclass.join.";
+
+/** On-device screen check (decision D9). Everything below runs in the student's browser. */
+export const TESSERACT_BASE = "/tesseract";
+export const SCREEN_SAMPLE_MS = 5000; // hash a frame this often
+export const SCREEN_CHANGE_BITS = 10; // hash bits that must differ before a new OCR
+export const SCREEN_OCR_MAX_INTERVAL_MS = 60_000; // OCR at least this often while sharing
+export const SCREEN_OCR_MAX_WIDTH = 1280; // frames are downscaled to this before OCR

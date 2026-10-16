@@ -178,7 +178,7 @@ def list_slides(
     cls: Class = Depends(get_participant_class), db: Session = Depends(get_db)
 ) -> list[SlideOut]:
     return [
-        SlideOut(id=s.id, index=s.index, text_preview=s.text[:160])
+        SlideOut(id=s.id, index=s.index, text_preview=s.text[:160], text=s.text)
         for s in slides.list_slides(db, cls.id)
     ]
 

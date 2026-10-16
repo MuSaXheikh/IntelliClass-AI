@@ -80,6 +80,7 @@ export interface SlideInfo {
   id: string;
   index: number;
   text_preview: string;
+  text?: string;
 }
 
 export interface RegisterRequest {
@@ -140,9 +141,12 @@ export interface VisionFeaturesPayload {
   window_focused: boolean;
 }
 
+/** On-device screen check (D9): only numbers, never a frame or the recognised text. */
 export interface ScreenScorePayload {
-  similarity: number;
-  changed: boolean;
+  slide_index: number;
+  similarity: number; // 0..1: share of the slide's words found on the screen
+  changed: boolean; // true right after a fresh OCR, false when re-sent to stay current
+  ocr_chars: number; // readable characters seen; few means "do not judge"
 }
 
 export interface NudgeReplyPayload {

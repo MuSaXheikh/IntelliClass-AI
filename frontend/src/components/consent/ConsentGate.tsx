@@ -60,8 +60,10 @@ export function ConsentGate({ className, busy, error, onJoin, onCancel }: Consen
           <strong>on your device</strong>; no video is sent)
         </li>
         <li>
-          ✔ <strong>Screen:</strong> whether this class tab stays visible and in front. Slide
-          comparison comes in a later version; no screenshots are taken.
+          ✔ <strong>Screen:</strong> whether this class tab stays visible and in front. If you
+          choose to share your screen, your browser reads the words on it and compares them with the
+          slides <strong>on your device</strong>; only a match score is sent, never a screenshot or
+          the text.
         </li>
         <li>
           ✔ <strong>Microphone:</strong> optional, to speak in class

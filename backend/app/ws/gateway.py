@@ -27,6 +27,7 @@ from app.models.event import Alert, Nudge
 from app.models.session import LiveSession, SessionStatus
 from app.models.user import Role, User
 from app.schemas.alerts import AlertOut
+from app.schemas.screen import ScreenScoreIn
 from app.services.live.manager import LiveSessionManager
 from app.services.live.recorder import apply_decision, record_status_change
 from app.services.vision_events.features import VisionFeatures
@@ -169,8 +170,8 @@ async def _dispatch(ctx: SocketContext, raw: Any) -> None:
         await _on_features(ctx, msg.payload)
     elif msg.type == "nudge.reply" and ctx.user.role == Role.STUDENT:
         await _on_nudge_reply(ctx, msg.payload)
-    elif msg.type == "screen.score":
-        pass  # Phase 4 (BE-09): on-device similarity score
+    elif msg.type == "screen.score" and ctx.user.role == Role.STUDENT:
+        _on_screen_score(ctx, msg.payload)
     else:
         await ctx.websocket.send_json(error_message("UNKNOWN_TYPE", f"Unsupported type {msg.type}"))
 
@@ -210,6 +211,15 @@ async def _on_features(ctx: SocketContext, payload: dict[str, Any]) -> None:
         await ctx.connections.to_instructors(
             ctx.session.id, envelope("alert.new" if created else "alert.update", out)
         )
+
+
+def _on_screen_score(ctx: SocketContext, payload: dict[str, Any]) -> None:
+    """Store the on-device similarity score; the next feature packet applies it (BE-09)."""
+    try:
+        score = ScreenScoreIn.model_validate(payload)
+    except ValidationError:
+        return  # a malformed score is dropped silently; it is advisory, never punitive on its own
+    ctx.live.handle_screen_score(ctx.session.id, ctx.user.id, score)
 
 
 async def _on_nudge_reply(ctx: SocketContext, payload: dict[str, Any]) -> None:
