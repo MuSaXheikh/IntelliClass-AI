@@ -101,7 +101,7 @@ Status: `todo` · `doing` · `done` · `blocked`
 | ID | Task | Owner | Status |
 |----|------|-------|--------|
 | DEP-02 | Dockerise all services; full Docker Compose | M3 | doing (backend + db + migrations done 2026-10-16; frontend stays on Vercel) |
-| DEP-03 | Deploy: Vercel (frontend), VM (backend + AI), Supabase, LiveKit | M3 | todo |
+| DEP-03 | Deploy: Vercel (frontend), Render free (backend, Docker) now and a VM later, Supabase cloud, LiveKit | M3 | doing (`render.yaml`, `vercel.json`, `docs/deploy.md` ready 2026-10-16; accounts pending) |
 | DEP-04 | CD from `main`, secrets management | M3 | todo |
 | DEP-05 | Health checks and monitoring | M3 | todo |
 | DEP-06 | Hosting decision: HF Spaces free Docker withdrawn July 2026 → Oracle Cloud Always Free ARM VM (primary) or Azure for Students credit (fallback) | M3 | todo |

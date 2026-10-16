@@ -8,5 +8,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY . .
+RUN chmod +x scripts/start.sh
 EXPOSE 8000
-CMD ["uv", "run", "--no-dev", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Runs the migrations, then serves on $PORT (defaults to 8000). RUN_MIGRATIONS=false to skip.
+CMD ["/app/scripts/start.sh"]

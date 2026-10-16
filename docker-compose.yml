@@ -1,4 +1,4 @@
-# Single-machine stack: PostgreSQL (pgvector) + one-shot migrations + API.
+# Single-machine stack: PostgreSQL (pgvector) + API (the image runs the migrations on start).
 # Ports are published on 127.0.0.1 and off the defaults, so they never collide with a host
 # PostgreSQL (5432), Redis (6379) or the Supabase CLI stack (54321-54324). Interpolated values
 # come from the root .env (copy .env.example); the API also reads backend/.env.
@@ -19,19 +19,6 @@ services:
       timeout: 3s
       retries: 10
 
-  # Runs `alembic upgrade head` once; the API only starts after it succeeded.
-  migrate:
-    build: ./backend
-    env_file:
-      - ./backend/.env
-    environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-intelliclass}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the root .env}@db:5432/${POSTGRES_DB:-intelliclass}
-      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
-      SUPABASE_URL: ${SUPABASE_URL:-}
-    command: ["uv", "run", "--no-dev", "alembic", "upgrade", "head"]
-    depends_on:
-      db:
-        condition: service_healthy
 
   api:
     build: ./backend
@@ -58,8 +45,8 @@ services:
       retries: 6
       start_period: 20s
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
 
   # Only needed when the API runs as several replicas (decision D16): `docker compose --profile redis up`.
   redis:

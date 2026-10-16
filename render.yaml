@@ -1,0 +1,42 @@
+# Render Blueprint: one free web service for the backend (Docker, migrations run on start).
+# Dashboard → New → Blueprint → this repo. Secrets marked sync:false are asked for once.
+services:
+  - type: web
+    name: intelliclass-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore
+    healthCheckPath: /healthz
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL          # Supabase: Session pooler URI with the postgresql+psycopg:// prefix
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRE_MINUTES
+        value: "480"
+      - key: AUTO_CREATE_TABLES
+        value: "false"
+      - key: STORAGE_BACKEND
+        value: supabase
+      - key: SUPABASE_URL          # https://<project-ref>.supabase.co
+        sync: false
+      - key: SUPABASE_SERVICE_KEY  # service_role key (Project settings → API); never the anon key
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: slides
+      - key: ALLOWED_ORIGINS       # https://<your-app>.vercel.app (comma-separated if several)
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: SOFFICE_PATH
+        value: soffice
+      - key: SCHEDULE_TIMEZONE
+        value: Asia/Karachi
