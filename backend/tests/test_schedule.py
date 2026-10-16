@@ -199,3 +199,35 @@ def test_export_round_trips_through_upload(
     theirs = client.get("/api/v1/schedule/export.xlsx", headers=auth(student[0]))
     assert theirs.status_code == 200
     assert openpyxl.load_workbook(io.BytesIO(theirs.content)).active.max_row == 2
+
+
+def test_spreadsheet_quirks_are_understood(
+    client: TestClient, live_session: dict, instructor: tuple[str, dict]
+) -> None:
+    itoken, _ = instructor
+    base = today_in(get_settings()) + timedelta(days=12)
+    # a General-formatted time cell holds a fraction of a day; exported dates carry a time part
+    sheet = _xlsx(
+        [
+            ["CS-401", f"{base.isoformat()} 00:00:00", 0.375, 0.5, "Serial time", ""],
+            ["CS-401", (base + timedelta(days=1)).strftime("%d/%m/%Y 00:00"), "9:30", "", "", ""],
+        ]
+    )
+    assert _upload(client, itoken, sheet)["added"] == 2
+    times = {
+        e["scheduled_date"]: e for e in client.get("/api/v1/schedule", headers=auth(itoken)).json()
+    }
+    assert times[base.isoformat()]["start_time"] == "09:00:00"
+    assert times[base.isoformat()]["end_time"] == "12:00:00"
+    assert times[(base + timedelta(days=1)).isoformat()]["start_time"] == "09:30:00"
+
+
+def test_blank_and_explicit_course_code_for_the_same_slot_is_a_row_error(
+    client: TestClient, live_session: dict, instructor: tuple[str, dict]
+) -> None:
+    itoken, _ = instructor
+    day = (today_in(get_settings()) + timedelta(days=4)).isoformat()
+    sheet = _xlsx([["", day, "09:00"], ["CS-401", day, "09:00"]], ["course_code", "date", "start"])
+    result = _upload(client, itoken, sheet)
+    assert result["applied"] is False and "Row 3: duplicate" in result["errors"][0]
+    assert client.get("/api/v1/schedule", headers=auth(itoken)).json() == []

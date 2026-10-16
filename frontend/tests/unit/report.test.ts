@@ -80,3 +80,16 @@ describe("reportFilename", () => {
     );
   });
 });
+
+describe("filenameFromDisposition", () => {
+  it("prefers the server's file name and tolerates missing headers", async () => {
+    const { filenameFromDisposition } = await import("@/lib/api");
+    expect(
+      filenameFromDisposition('attachment; filename="intelliclass-report-CS-401-2026-10-17.pdf"'),
+    ).toBe("intelliclass-report-CS-401-2026-10-17.pdf");
+    expect(filenameFromDisposition("attachment; filename*=UTF-8''sched%20ule.xlsx")).toBe(
+      "sched ule.xlsx",
+    );
+    expect(filenameFromDisposition(null)).toBeNull();
+  });
+});

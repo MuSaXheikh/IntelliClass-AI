@@ -8,6 +8,7 @@ its date. A sheet is applied all-or-nothing so a typo never half-updates the wee
 import csv
 import io
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
@@ -19,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.errors import ApiError
+from app.db.base import new_id
 from app.models.classroom import Class, Enrolment
 from app.models.schedule import ScheduleEntry
 from app.models.user import Role, User
@@ -33,8 +35,23 @@ HEADER_ALIASES = {
     "topic": {"topic", "title", "lecture", "lesson", "description"},
     "location": {"location", "room", "venue", "link", "where"},
 }
-DATE_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y", "%d %b %Y", "%d %B %Y", "%Y/%m/%d")
-TIME_FORMATS = ("%H:%M", "%H:%M:%S", "%I:%M %p", "%I:%M%p", "%I %p", "%I%p", "%H.%M")
+DATE_FORMATS = (
+    "%Y-%m-%d",
+    "%d/%m/%Y",
+    "%d-%m-%Y",
+    "%d.%m.%Y",
+    "%d %b %Y",
+    "%d %B %Y",
+    "%Y/%m/%d",
+    # spreadsheets often export a date cell with a time part
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d %H:%M",
+    "%d/%m/%Y %H:%M:%S",
+    "%d/%m/%Y %H:%M",
+    "%d-%m-%Y %H:%M:%S",
+    "%d.%m.%Y %H:%M",
+)
+TIME_FORMATS = ("%H:%M", "%H:%M:%S", "%I:%M %p", "%I:%M%p", "%I %p", "%I%p")
 TEMPLATE_COLUMNS = ("course_code", "date", "start", "end", "topic", "location")
 
 
@@ -79,6 +96,10 @@ def _parse_date(value: object) -> date | None:
         parsed = from_excel(value)
         return parsed.date() if isinstance(parsed, datetime) else None
     text = str(value or "").strip()
+    try:
+        return datetime.fromisoformat(text).date()  # 2026-10-22, 2026-10-22T09:00, with seconds
+    except ValueError:
+        pass
     for fmt in DATE_FORMATS:
         try:
             return datetime.strptime(text, fmt).date()
@@ -93,10 +114,10 @@ def _parse_time(value: object) -> time | None:
     if isinstance(value, time):
         return value.replace(second=0, microsecond=0)
     if isinstance(value, int | float) and not isinstance(value, bool):
-        parsed = from_excel(value)
-        return (
-            parsed.time().replace(second=0, microsecond=0) if isinstance(parsed, datetime) else None
-        )
+        parsed = from_excel(value)  # a fraction of a day comes back as a time, a serial as datetime
+        if isinstance(parsed, datetime):
+            return parsed.time().replace(second=0, microsecond=0)
+        return parsed.replace(second=0, microsecond=0) if isinstance(parsed, time) else None
     text = str(value or "").strip().upper().replace(".", ":")
     for fmt in TIME_FORMATS:
         try:
@@ -106,17 +127,29 @@ def _parse_time(value: object) -> time | None:
     return None
 
 
+def _take_rows(source: Iterable[Iterable[object]]) -> list[list[object]]:
+    """Non-empty rows, streamed and capped so a huge sheet never gets expanded in memory."""
+    rows: list[list[object]] = []
+    for row in source:
+        cells = list(row)
+        if any(cell not in (None, "") for cell in cells):
+            rows.append(cells)
+            if len(rows) > MAX_ROWS + 1:  # header + MAX_ROWS, plus one to detect the overflow
+                break
+    return rows
+
+
 def _rows_from_xlsx(data: bytes) -> list[list[object]]:
     workbook = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
-    sheet = workbook.worksheets[0]
-    rows = [list(row) for row in sheet.iter_rows(values_only=True)]
-    workbook.close()
-    return rows
+    try:
+        return _take_rows(workbook.worksheets[0].iter_rows(values_only=True))
+    finally:
+        workbook.close()
 
 
 def _rows_from_csv(data: bytes) -> list[list[object]]:
     text = data.decode("utf-8-sig", errors="replace")
-    return [list(row) for row in csv.reader(io.StringIO(text))]
+    return _take_rows(csv.reader(io.StringIO(text)))
 
 
 def parse_sheet(data: bytes, filename: str) -> tuple[list[ParsedRow], list[str]]:
@@ -131,7 +164,6 @@ def parse_sheet(data: bytes, filename: str) -> tuple[list[ParsedRow], list[str]]
             return [], ["Upload an Excel workbook (.xlsx) or a CSV file"]
     except Exception:  # openpyxl raises many kinds of errors on corrupt files
         return [], ["The file could not be read as a spreadsheet"]
-    raw = [row for row in raw if any(cell not in (None, "") for cell in row)]
     if not raw:
         return [], ["The sheet is empty"]
     if len(raw) - 1 > MAX_ROWS:
@@ -208,6 +240,7 @@ def apply_sheet(
     }
     errors: list[str] = []
     resolved: list[tuple[Class, ParsedRow]] = []
+    slots: set[tuple[str, date, time]] = set()  # a blank and an explicit code can name one class
     for row in rows:
         if row.scheduled_date < today:
             errors.append(f"Row {row.line}: {row.scheduled_date} is in the past")
@@ -227,6 +260,13 @@ def apply_sheet(
                 )
                 continue
             cls = found
+        slot = (cls.id, row.scheduled_date, row.start_time)
+        if slot in slots:
+            errors.append(
+                f"Row {row.line}: duplicate of an earlier row (same class, date and start)"
+            )
+            continue
+        slots.add(slot)
         resolved.append((cls, row))
     if errors or not resolved:
         return ScheduleUploadOut(applied=False, errors=errors or ["No rows to apply"])
@@ -242,6 +282,7 @@ def apply_sheet(
         entry = existing.get((cls.id, row.scheduled_date, row.start_time))
         if entry is None:
             entry = ScheduleEntry(
+                id=new_id(),
                 class_id=cls.id,
                 scheduled_date=row.scheduled_date,
                 start_time=row.start_time,
@@ -250,7 +291,7 @@ def apply_sheet(
                 location=row.location,
             )
             db.add(entry)
-            db.flush()
+            existing[(cls.id, row.scheduled_date, row.start_time)] = entry
             summary.added += 1
         else:
             changed = (entry.end_time, entry.topic, entry.location) != (

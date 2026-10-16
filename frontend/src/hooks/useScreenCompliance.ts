@@ -10,7 +10,7 @@ import {
 import { describeMediaError } from "@/lib/media";
 import { createOcr, type Ocr } from "@/lib/screen/ocr";
 import { HASH_SIZE, hamming, luminance, phash, type Hash } from "@/lib/screen/phash";
-import { slideSimilarity } from "@/lib/screen/similarity";
+import { matchTokens, tokens } from "@/lib/screen/similarity";
 import type { ScreenScorePayload } from "@/types/contract";
 
 export type ScreenStatus =
@@ -21,6 +21,22 @@ interface Options {
   slideIndex: number;
   slideTexts: readonly string[] | null;
   onScore: (payload: ScreenScorePayload) => void;
+}
+
+/** A slide with no words (or no slide) cannot be judged: report no readable characters. */
+function toPayload(
+  match: { similarity: number } | null,
+  slideIndex: number,
+  changed: boolean,
+  ocrChars: number,
+): ScreenScorePayload {
+  if (!match) return { slide_index: slideIndex, similarity: 0, changed, ocr_chars: 0 };
+  return {
+    slide_index: slideIndex,
+    similarity: Number(match.similarity.toFixed(3)),
+    changed,
+    ocr_chars: ocrChars,
+  };
 }
 
 export interface ScreenCompliance {
@@ -67,6 +83,7 @@ export function useScreenCompliance({
     let lastOcrHash: Hash | null = null;
     let lastOcrAt = 0;
     let lastScore: ScreenScorePayload | null = null;
+    let lastTokens: Set<string> | null = null; // words last read on the screen (device only)
     const video = document.createElement("video");
     video.muted = true;
     video.playsInline = true;
@@ -94,11 +111,18 @@ export function useScreenCompliance({
       const now = Date.now();
       const changed = lastOcrHash === null || hamming(hash, lastOcrHash) > SCREEN_CHANGE_BITS;
       const due = now - lastOcrAt > SCREEN_OCR_MAX_INTERVAL_MS;
+      const { slideTexts: texts, slideIndex: index } = slideRef.current;
       if (!changed && !due) {
-        if (lastScore) onScoreRef.current({ ...lastScore, changed: false }); // keep it fresh
+        if (!lastScore || !lastTokens || !texts) return;
+        if (lastScore.slide_index !== index) {
+          // the instructor moved on while this screen stayed the same: re-score the same words
+          const match = matchTokens(lastTokens, texts, index);
+          lastScore = toPayload(match, index, false, lastScore.ocr_chars);
+          setLastSimilarity(lastScore.ocr_chars ? lastScore.similarity : null);
+        }
+        onScoreRef.current({ ...lastScore, changed: false }); // keep the server's view fresh
         return;
       }
-      const { slideTexts: texts, slideIndex: index } = slideRef.current;
       if (!ocr || !texts || texts.length === 0) return;
       busy = true;
       try {
@@ -142,7 +166,7 @@ export function useScreenCompliance({
         });
       } catch (caught) {
         if (cancelled) return;
-        setError(describeMediaError(caught, "camera").replace(/camera/gi, "screen"));
+        setError(describeMediaError(caught, "screen"));
         setStatus("denied");
         setWanted(false);
         return;

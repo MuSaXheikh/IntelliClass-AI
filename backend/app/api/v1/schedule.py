@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -129,6 +129,3 @@ def restore_scheduled_class(
     record_audit(db, user.id, "schedule.restore", "schedule", entry.id)
     db.commit()
     return schedule._to_out(entry, cls, today)
-
-
-__all__ = ["router", "status"]

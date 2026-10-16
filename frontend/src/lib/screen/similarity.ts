@@ -38,22 +38,33 @@ export interface SlideMatch {
   bestIndex: number;
 }
 
-/** Best containment of the current slide and its neighbours (a student may be a slide behind). */
+/**
+ * Best containment of the current slide and its neighbours (a student may be a slide behind).
+ * Null when none of those slides has any words (a picture-only page, or an index outside the
+ * deck): there is nothing to compare, so the screen must not be judged.
+ */
+export function matchTokens(
+  observed: Set<string>,
+  slideTexts: readonly string[],
+  index: number,
+  radius = 1,
+): SlideMatch | null {
+  let best: SlideMatch | null = null;
+  const last = Math.min(slideTexts.length - 1, index + radius);
+  for (let i = Math.max(0, index - radius); i <= last; i += 1) {
+    const reference = tokens(slideTexts[i] ?? "");
+    if (reference.size === 0) continue;
+    const similarity = containment(reference, observed);
+    if (best === null || similarity > best.similarity) best = { similarity, bestIndex: i };
+  }
+  return best;
+}
+
 export function slideSimilarity(
   ocrText: string,
   slideTexts: readonly string[],
   index: number,
   radius = 1,
-): SlideMatch {
-  const observed = tokens(ocrText);
-  let best: SlideMatch = { similarity: 0, bestIndex: index };
-  for (
-    let i = Math.max(0, index - radius);
-    i <= Math.min(slideTexts.length - 1, index + radius);
-    i += 1
-  ) {
-    const similarity = containment(tokens(slideTexts[i] ?? ""), observed);
-    if (similarity > best.similarity) best = { similarity, bestIndex: i };
-  }
-  return best;
+): SlideMatch | null {
+  return matchTokens(tokens(ocrText), slideTexts, index, radius);
 }
