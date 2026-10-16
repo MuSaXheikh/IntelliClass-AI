@@ -21,3 +21,17 @@ describe("describeMediaError", () => {
     expect(describeMediaError(new Error("weird"), "camera")).toBe("weird");
   });
 });
+
+describe("describeMediaError for screen sharing", () => {
+  it("uses screen-specific wording", () => {
+    const cancelled = new DOMException("denied", "NotAllowedError");
+    expect(describeMediaError(cancelled, "screen")).toMatch(/Screen sharing was cancelled/);
+    expect(describeMediaError(new DOMException("x", "InvalidStateError"), "screen")).toMatch(
+      /click/,
+    );
+    // no mediaDevices in the test environment: the generic HTTPS hint, worded for screens
+    expect(describeMediaError(new TypeError("boom"), "screen")).toMatch(
+      /Screen sharing needs HTTPS/,
+    );
+  });
+});

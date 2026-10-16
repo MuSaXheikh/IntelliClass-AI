@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { containment, slideSimilarity, tokens } from "@/lib/screen/similarity";
+import { containment, matchTokens, slideSimilarity, tokens } from "@/lib/screen/similarity";
 
 const SLIDES = [
   "Eye Aspect Ratio: six landmarks per eye; the ratio drops when the eye closes",
@@ -34,11 +34,18 @@ describe("tokens and containment", () => {
 describe("slideSimilarity", () => {
   it("prefers the current slide but accepts a neighbour", () => {
     const onCurrent = slideSimilarity("PERCLOS fraction of time eyes closed window", SLIDES, 1);
-    expect(onCurrent.bestIndex).toBe(1);
-    expect(onCurrent.similarity).toBeGreaterThan(0.8);
+    expect(onCurrent?.bestIndex).toBe(1);
+    expect(onCurrent?.similarity).toBeGreaterThan(0.8);
     const behind = slideSimilarity("Eye Aspect Ratio six landmarks per eye ratio drops", SLIDES, 1);
-    expect(behind.bestIndex).toBe(0);
+    expect(behind?.bestIndex).toBe(0);
     const away = slideSimilarity("Instagram reels explore messages notifications", SLIDES, 1);
-    expect(away.similarity).toBe(0);
+    expect(away?.similarity).toBe(0);
+  });
+
+  it("refuses to judge picture-only slides or an index outside the deck", () => {
+    expect(slideSimilarity("toolbar chat window text", ["", "", ""], 1)).toBeNull();
+    expect(slideSimilarity("anything", SLIDES, 7)).toBeNull();
+    const mixed = matchTokens(tokens("PERCLOS fraction of time eyes closed"), ["", SLIDES[1]], 0);
+    expect(mixed?.bestIndex).toBe(1);
   });
 });

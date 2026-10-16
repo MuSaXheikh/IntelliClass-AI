@@ -132,16 +132,12 @@ export function useScreenCompliance({
         ocrCanvas.getContext("2d")?.drawImage(video, 0, 0, ocrCanvas.width, ocrCanvas.height);
         const result = await ocr.recognize(ocrCanvas);
         if (cancelled) return;
-        const match = slideSimilarity(result.text, texts, index);
+        lastTokens = tokens(result.text);
         lastOcrHash = hash;
         lastOcrAt = now;
-        lastScore = {
-          slide_index: index,
-          similarity: Number(match.similarity.toFixed(3)),
-          changed: true,
-          ocr_chars: result.text.replace(/\s+/g, "").length,
-        };
-        setLastSimilarity(lastScore.similarity);
+        const chars = result.text.replace(/\s+/g, "").length;
+        lastScore = toPayload(matchTokens(lastTokens, texts, index), index, true, chars);
+        setLastSimilarity(lastScore.ocr_chars ? lastScore.similarity : null);
         onScoreRef.current(lastScore);
       } catch {
         // one failed recognition is not worth stopping the check; the next sample retries

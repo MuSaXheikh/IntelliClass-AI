@@ -37,6 +37,9 @@ export function ScreenCheckChip({ screen }: { screen: ScreenCompliance }) {
             · matches slides {Math.round(screen.lastSimilarity * 100)}%
           </span>
         )}
+        {running && screen.lastSimilarity === null && (
+          <span className="font-normal">· nothing to compare on this slide</span>
+        )}
       </span>
       {running ? (
         <Button variant="ghost" size="sm" onClick={screen.stop}>

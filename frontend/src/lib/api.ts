@@ -43,6 +43,11 @@ export function setUnauthorizedHandler(handler: (() => void) | null): void {
   onUnauthorized = handler;
 }
 
+export function filenameFromDisposition(header: string | null): string | null {
+  const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(header ?? "");
+  return match ? decodeURIComponent(match[1].trim()) : null;
+}
+
 async function request<T>(path: string, init: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, init);
   if (response.status === 401 && !path.startsWith("/auth/")) onUnauthorized?.();
@@ -95,7 +100,9 @@ export const api = {
     const url = URL.createObjectURL(await response.blob());
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = filename;
+    // The server names the file (Content-Disposition); the caller's name is the fallback.
+    anchor.download =
+      filenameFromDisposition(response.headers.get("content-disposition")) ?? filename;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
