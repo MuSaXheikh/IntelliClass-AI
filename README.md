@@ -11,7 +11,7 @@ A web classroom that analyses each consenting student's webcam **inside their ow
 |------|------|
 | `backend/` | FastAPI: REST API, WebSocket gateway, Vision Event Service, Alert Engine, nudge, audit. Python 3.12 via `uv`. |
 | `frontend/` | Next.js + TypeScript + Tailwind: instructor dashboard, student classroom, on-device vision worker. Node 22 via nvm + pnpm. |
-| `docs/` | Proposal PDF, `prd.md`, `architecture.md`, `design.md`, `rules.md`, `memory.md` (read first), `tasks.md`, `task_split.md` (who does what), `erd.md` (database diagram), `demo.md`, `deploy.md` (free-tier hosting). |
+| `docs/` | Proposal PDF, `prd.md`, `architecture.md`, `design.md`, `rules.md`, `memory.md` (read first), `tasks.md`, `task_split.md` (who does what), `erd.md` (database diagram), `start.md` (run everything on a laptop), `demo.md`, `deploy.md` (free-tier hosting). |
 | `ml/` | Training notebooks and evaluation (datasets never committed). |
 | `infra/` | Load tests and deployment config. |
 
