@@ -5,14 +5,22 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { ConnectionPill } from "@/components/classroom/ConnectionPill";
 import { NudgeBanner } from "@/components/classroom/NudgeBanner";
 import { OnDeviceChip } from "@/components/classroom/OnDeviceChip";
 import { ScreenCheckChip } from "@/components/classroom/ScreenCheckChip";
 import { SlideImage } from "@/components/classroom/SlideImage";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { ButtonLink } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
+import { LiveBadge } from "@/components/ui/LiveBadge";
+import { Notice } from "@/components/ui/Notice";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useScreenCompliance } from "@/hooks/useScreenCompliance";
-import { useSessionSocket, type SocketStatus } from "@/hooks/useSessionSocket";
+import { useSessionSocket } from "@/hooks/useSessionSocket";
 import { useVisionPipeline } from "@/hooks/useVisionPipeline";
 import { readJoinInfo, useJoinInfo, writeJoinInfo } from "@/lib/joinStore";
 import { playNudgeSound } from "@/lib/sound";
@@ -31,14 +39,6 @@ const VideoStage = dynamic(
 );
 
 const LOW_CONFIDENCE = 0.5;
-const STATUS_LABEL: Record<SocketStatus, string> = {
-  idle: "idle",
-  connecting: "connecting",
-  open: "live",
-  reconnecting: "reconnecting…",
-  rejected: "refused",
-  closed: "closed",
-};
 
 export default function StudentLiveRoomPage() {
   const { id: sessionId } = useParams<{ id: string }>();
@@ -127,15 +127,15 @@ export default function StudentLiveRoomPage() {
 
   if (ended) {
     return (
-      <div className="flex flex-col gap-4">
-        <h1 className="text-xl font-bold">Live class</h1>
-        <div className="rounded-card border border-line bg-surface p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
-          The class has ended. Your private attention and participation summary is under{" "}
-          <Link href="/student/summary" className="text-primary underline dark:text-green-300">
-            My summary
-          </Link>
-          .
-        </div>
+      <div className="flex flex-col gap-6">
+        <PageHeader title="Live class" />
+        <EmptyState
+          title="The class has ended"
+          icon="check-circle"
+          action={<ButtonLink href="/student/summary">Open My summary</ButtonLink>}
+        >
+          Your private attention and participation summary is ready.
+        </EmptyState>
       </div>
     );
   }
@@ -150,46 +150,52 @@ export default function StudentLiveRoomPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">Live class</h1>
-        <span className="text-xs text-ink-muted dark:text-slate-400">
-          connection: {STATUS_LABEL[socket.status]}
-        </span>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="text-xl font-semibold tracking-tight">Live class</h1>
+          <LiveBadge label="Live" />
+          <ConnectionPill status={socket.status} />
+        </div>
+        <p className="font-mono text-sm text-ink-muted tabular-nums">
+          Slide{" "}
+          <span className="font-semibold text-ink">{slideCount > 0 ? slideIndex + 1 : 0}</span> of{" "}
+          {slideCount}
+        </p>
       </header>
 
       {nudge && <NudgeBanner nudge={nudge} onReply={reply} />}
       {socket.status === "rejected" && (
-        <div
-          className="rounded-card border border-red-200 bg-surface p-4 text-sm dark:border-red-900/60 dark:bg-slate-900"
-          role="alert"
-        >
+        <Notice tone="danger" role="alert">
           This class is no longer accepting your connection: your sign-in may have expired or the
           class has ended. Open it again from{" "}
-          <Link href="/student" className="text-primary underline dark:text-green-300">
+          <Link href="/student" className="font-medium text-primary-ink underline">
             your classes
           </Link>
           .
-        </div>
+        </Notice>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(17rem,1fr)]">
         <SlideImage
           classId={join.session.class_id}
           index={slideCount > 0 ? slideIndex : null}
           alt={`Slide ${slideIndex + 1} of ${slideCount}`}
         />
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           <VideoStage url={join.livekit_url} token={join.livekit_token} publish={false} />
-          <OnDeviceChip status={vision.status} lowConfidence={lowConfidence} />
-          <ScreenCheckChip screen={screen} />
-          {vision.error && (
-            <p className="text-xs text-red-600" role="alert">
-              {vision.error}
-            </p>
-          )}
-          <p className="text-xs text-ink-muted dark:text-slate-400">
-            slide {slideCount > 0 ? slideIndex + 1 : 0}/{slideCount}
-          </p>
+          <Card pad="sm" className="flex flex-col gap-3">
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <Icon name="shield-check" className="h-4 w-4 text-ink-muted" />
+              Your privacy
+            </h2>
+            <OnDeviceChip status={vision.status} lowConfidence={lowConfidence} />
+            <ScreenCheckChip screen={screen} />
+            {vision.error && (
+              <p className="text-xs font-medium text-danger-ink" role="alert">
+                {vision.error}
+              </p>
+            )}
+          </Card>
         </div>
       </div>
     </div>
