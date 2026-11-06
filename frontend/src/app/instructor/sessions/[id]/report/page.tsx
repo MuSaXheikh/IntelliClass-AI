@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AttentionTimeline } from "@/components/charts/AttentionTimeline";
@@ -8,9 +7,11 @@ import { StateLegend } from "@/components/charts/StateLegend";
 import { StateStackBar } from "@/components/charts/StateStackBar";
 import { StatTile } from "@/components/charts/StatTile";
 import { TypeBars } from "@/components/charts/TypeBars";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { api, ApiError } from "@/lib/api";
@@ -82,34 +83,29 @@ export default function SessionReportPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="font-mono text-xs text-ink-muted dark:text-slate-400">{cls.course_code}</p>
-          <h1 className="text-2xl font-bold">{cls.name}: class report</h1>
-          <p className="text-sm text-ink-muted dark:text-slate-400">
+      <PageHeader
+        back={{ href: `/instructor/classes/${cls.id}`, label: "Back to class" }}
+        eyebrow={cls.course_code}
+        title={`${cls.name}: class report`}
+        description={
+          <>
             {formatDateTime(report.started_at)} · {formatDuration(report.duration_s)}
             {session.status === "live" && " · still live, numbers are provisional"}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+          </>
+        }
+        actions={
           <Button
             variant="secondary"
-            size="sm"
             disabled={downloading}
             onClick={() => void downloadPdf(cls.course_code, report.started_at)}
           >
+            <Icon name="download" />
             {downloading ? "Preparing PDF…" : "Download PDF"}
           </Button>
-          <Link
-            href={`/instructor/classes/${cls.id}`}
-            className="text-sm text-primary underline-offset-2 hover:underline dark:text-green-300"
-          >
-            Back to class
-          </Link>
-        </div>
-      </header>
+        }
+      />
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Summary">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Summary">
         <StatTile
           label="Average attention"
           value={formatPercent(report.avg_attention_pct)}
@@ -126,59 +122,55 @@ export default function SessionReportPage() {
         />
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
+      <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         <Card>
-          <h2 className="mb-2 text-lg font-semibold">Attention over the session</h2>
+          <CardHeader title="Attention over the session" />
           <AttentionTimeline points={report.timeline} />
         </Card>
         <Card>
-          <h2 className="mb-2 text-lg font-semibold">Alerts by type</h2>
+          <CardHeader title="Alerts by type" />
           <TypeBars counts={report.alerts_by_type} />
         </Card>
       </div>
 
-      <Card>
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Students</h2>
+      <Card pad="none">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-5 pb-4">
+          <h2 className="text-base font-semibold">Students</h2>
           <StateLegend states={usedStates} />
         </div>
         {rows.length === 0 ? (
-          <p className="text-sm text-ink-muted dark:text-slate-400">No students were enrolled.</p>
+          <p className="px-5 pb-5 text-sm text-ink-muted">No students were enrolled.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-wide text-ink-muted dark:text-slate-400">
+              <thead className="border-y border-line bg-surface-muted text-xs text-ink-muted">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">Student</th>
-                  <th className="py-2 pr-3 font-medium">Attention</th>
-                  <th className="py-2 pr-3 font-medium">Time by state</th>
-                  <th className="py-2 pr-3 text-right font-medium">Alerts</th>
-                  <th className="py-2 text-right font-medium">Nudges</th>
+                  <th className="px-5 py-2.5 font-semibold">Student</th>
+                  <th className="py-2.5 pr-4 font-semibold">Attention</th>
+                  <th className="py-2.5 pr-4 font-semibold">Time by state</th>
+                  <th className="py-2.5 pr-4 text-right font-semibold">Alerts</th>
+                  <th className="py-2.5 pr-5 text-right font-semibold">Nudges</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line dark:divide-slate-700">
+              <tbody className="divide-y divide-line">
                 {rows.map((r) => (
                   <tr key={r.student_id}>
-                    <td className="py-2 pr-3">
-                      <div>{r.full_name}</div>
-                      <div className="font-mono text-xs text-ink-muted dark:text-slate-400">
-                        {r.roll_no}
-                      </div>
+                    <td className="px-5 py-2.5">
+                      <div className="whitespace-nowrap font-medium">{r.full_name}</div>
+                      <div className="font-mono text-xs text-ink-muted">{r.roll_no}</div>
                     </td>
-                    <td className="py-2 pr-3 font-mono tabular-nums">
+                    <td className="py-2.5 pr-4 font-mono tabular-nums">
                       {attended(r) ? (
                         formatPercent(r.attention_pct)
                       ) : (
-                        <span className="font-sans text-xs text-ink-muted dark:text-slate-400">
-                          did not join
-                        </span>
+                        <span className="font-sans text-xs text-ink-muted">did not join</span>
                       )}
                     </td>
-                    <td className="min-w-48 py-2 pr-3">
+                    <td className="min-w-48 py-2.5 pr-4">
                       <StateStackBar seconds={r.seconds_by_state} label={r.full_name} />
                     </td>
-                    <td className="py-2 pr-3 text-right font-mono tabular-nums">{r.alerts}</td>
-                    <td className="py-2 text-right font-mono tabular-nums">{r.nudges}</td>
+                    <td className="py-2.5 pr-4 text-right font-mono tabular-nums">{r.alerts}</td>
+                    <td className="py-2.5 pr-5 text-right font-mono tabular-nums">{r.nudges}</td>
                   </tr>
                 ))}
               </tbody>
