@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { formatDay, formatTime, localToday, relativeDay } from "@/lib/schedule";
 import type { ScheduleEntry } from "@/types/contract";
 
@@ -14,8 +15,8 @@ interface ScheduleTableProps {
   emptyText: string;
 }
 
-const HEAD = "px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide";
-const CELL = "px-3 py-2 align-top";
+const HEAD = "px-4 py-2.5 text-left text-xs font-semibold";
+const CELL = "px-4 py-3 align-top";
 
 /** Spreadsheet-style grid: one row per meeting, the first row of each day carries the date. */
 export function ScheduleTable({
@@ -26,12 +27,18 @@ export function ScheduleTable({
   onRestore,
   emptyText,
 }: ScheduleTableProps) {
-  if (entries.length === 0) return <EmptyState title="Nothing scheduled">{emptyText}</EmptyState>;
+  if (entries.length === 0) {
+    return (
+      <EmptyState title="Nothing scheduled" icon="calendar">
+        {emptyText}
+      </EmptyState>
+    );
+  }
   const actions = Boolean(onCancel || onRestore);
   return (
-    <div className="overflow-x-auto rounded-card border border-line bg-surface dark:border-slate-700 dark:bg-slate-900">
+    <div className="overflow-x-auto rounded-card border border-line bg-surface shadow-card">
       <table className="w-full min-w-[760px] border-collapse text-sm">
-        <thead className="bg-slate-50 text-ink-muted dark:bg-slate-800 dark:text-slate-400">
+        <thead className="border-b border-line bg-surface-muted text-ink-muted">
           <tr>
             <th className={`${HEAD} w-44`}>Date</th>
             <th className={`${HEAD} w-28`}>Time</th>
@@ -52,27 +59,27 @@ export function ScheduleTable({
             return (
               <tr
                 key={entry.id}
-                className={`border-t ${
-                  firstOfDay ? "border-line dark:border-slate-700" : "border-transparent"
-                } ${index % 2 ? "bg-slate-50/60 dark:bg-slate-800/40" : ""} ${
-                  muted ? "text-ink-muted dark:text-slate-400" : ""
-                }`}
+                className={`transition-colors duration-150 hover:bg-surface-muted/60 ${
+                  firstOfDay && index > 0 ? "border-t border-line" : ""
+                } ${muted ? "text-ink-muted" : ""}`}
               >
                 <td className={`${CELL} whitespace-nowrap font-medium`}>
                   {firstOfDay ? formatDay(entry.scheduled_date) : ""}
                   {firstOfDay && relation === "today" && (
-                    <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary dark:text-green-300">
+                    <span className="ml-2 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-ink">
                       Today
                     </span>
                   )}
                 </td>
-                <td className={`${CELL} whitespace-nowrap font-mono text-xs`}>
+                <td className={`${CELL} whitespace-nowrap font-mono text-xs tabular-nums`}>
                   {formatTime(entry.start_time)}
                   {entry.end_time ? ` to ${formatTime(entry.end_time)}` : ""}
                 </td>
-                <td className={`${CELL} ${cancelled ? "line-through" : ""}`}>
-                  {entry.class_name}
-                  <span className="ml-2 font-mono text-xs text-ink-muted dark:text-slate-400">
+                <td className={CELL}>
+                  <span className={cancelled ? "line-through" : "font-medium"}>
+                    {entry.class_name}
+                  </span>
+                  <span className="block whitespace-nowrap font-mono text-xs text-ink-muted">
                     {entry.course_code}
                   </span>
                 </td>
@@ -81,9 +88,10 @@ export function ScheduleTable({
                 <td className={`${CELL} whitespace-nowrap`}>
                   {cancelled ? (
                     <span
-                      className="font-medium text-red-600 dark:text-red-400"
+                      className="inline-flex items-center gap-1 font-medium text-danger-ink"
                       title={entry.cancel_reason ?? undefined}
                     >
+                      <Icon name="x" className="h-3.5 w-3.5" />
                       Cancelled{entry.cancel_reason ? `: ${entry.cancel_reason}` : ""}
                     </span>
                   ) : relation === "past" ? (
@@ -115,9 +123,7 @@ export function ScheduleTable({
                       </Button>
                     )}
                     {onCancel && !entry.can_cancel && !cancelled && relation !== "past" && (
-                      <span className="text-xs text-ink-muted dark:text-slate-400">
-                        Only before the day
-                      </span>
+                      <span className="text-xs text-ink-muted">Only before the day</span>
                     )}
                   </td>
                 )}
