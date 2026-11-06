@@ -2,6 +2,7 @@
 
 import { LiveKitRoom, RoomAudioRenderer, VideoTrack, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import { Icon } from "@/components/ui/Icon";
 
 interface VideoStageProps {
   url: string | null;
@@ -14,11 +15,7 @@ function InstructorTile() {
   const tracks = useTracks([Track.Source.ScreenShare, Track.Source.Camera]);
   const first = tracks[0];
   if (!first) {
-    return (
-      <p className="text-xs text-ink-muted dark:text-slate-400">
-        Waiting for the instructor&apos;s video…
-      </p>
-    );
+    return <p className="p-3 text-xs text-slate-300">Waiting for the instructor&apos;s video…</p>;
   }
   return <VideoTrack trackRef={first} className="h-full w-full object-cover" />;
 }
@@ -27,7 +24,8 @@ function InstructorTile() {
 export function VideoStage({ url, token, publish }: VideoStageProps) {
   if (!url || !token) {
     return (
-      <div className="flex aspect-video items-center justify-center rounded-card border border-dashed border-line text-xs text-ink-muted dark:border-slate-700 dark:text-slate-400">
+      <div className="flex aspect-video w-full flex-col items-center justify-center gap-1.5 rounded-card border border-dashed border-line-strong p-3 text-center text-xs text-ink-muted">
+        <Icon name="video-off" className="h-5 w-5" />
         Live video not configured
       </div>
     );
@@ -39,7 +37,7 @@ export function VideoStage({ url, token, publish }: VideoStageProps) {
       connect
       video={publish}
       audio={publish}
-      className="aspect-video overflow-hidden rounded-card bg-black"
+      className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-card bg-slate-950"
     >
       <RoomAudioRenderer />
       <InstructorTile />
