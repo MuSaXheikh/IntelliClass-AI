@@ -7,6 +7,7 @@ import { AuthCard } from "@/components/auth/AuthCard";
 import { homePathFor, useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Notice } from "@/components/ui/Notice";
 import { ApiError } from "@/lib/api";
 
 export default function LoginPage() {
@@ -45,7 +46,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthCard title="Sign in">
+    <AuthCard title="Sign in" subtitle="Welcome back. Enter your details to continue.">
       <form onSubmit={submit} className="flex flex-col gap-4">
         <Input
           label="Email"
@@ -63,23 +64,19 @@ export default function LoginPage() {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
-        {expired && (
-          <p className="text-sm text-ink-muted dark:text-slate-400" role="status">
-            Your session expired. Please sign in again.
-          </p>
-        )}
+        {expired && <Notice role="status">Your session expired. Please sign in again.</Notice>}
         {error && (
-          <p className="text-sm text-red-600" role="alert">
+          <Notice tone="danger" role="alert">
             {error}
-          </p>
+          </Notice>
         )}
         <Button type="submit" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
         </Button>
       </form>
-      <p className="mt-4 text-center text-sm text-ink-muted dark:text-slate-400">
+      <p className="mt-6 text-center text-sm text-ink-muted">
         New here?{" "}
-        <Link href="/register" className="font-medium text-primary underline dark:text-green-300">
+        <Link href="/register" className="font-medium text-primary-ink underline">
           Create an account
         </Link>
       </p>
