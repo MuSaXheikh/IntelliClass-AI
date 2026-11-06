@@ -1,11 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { ScheduleTable } from "@/components/schedule/ScheduleTable";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { TextArea } from "@/components/ui/Input";
+import { Card, CardHeader } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
+import { FileField, TextArea } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { Notice } from "@/components/ui/Notice";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { api, ApiError } from "@/lib/api";
@@ -119,77 +122,85 @@ export default function InstructorSchedulePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Schedule</h1>
-        <p className="text-sm text-ink-muted dark:text-slate-400">
-          Upload a sheet whenever the plan changes. Students of each class see it at once. A class
-          can be cancelled only before the day it is held.
-        </p>
-      </div>
+      <PageHeader
+        title="Schedule"
+        description="Upload a sheet whenever the plan changes. Students of each class see it at once. A class can be cancelled only before the day it is held."
+      />
 
       <Card>
-        <h2 className="mb-1 text-lg font-semibold">Update from a sheet</h2>
-        <p className="text-sm text-ink-muted dark:text-slate-400">
-          Columns:{" "}
-          <code className="font-mono text-xs">course_code, date, start, end, topic, location</code>.
-          Dates as 2026-10-22 or 22/10/2026, times as 09:00 or 9:00 AM. Rows with the same class,
-          date and start time update the existing entry. Nothing is applied if any row has an error.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Excel or CSV file</span>
-            <input
-              type="file"
-              accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-              disabled={uploading}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = "";
-                void upload(file);
-              }}
-              className="text-sm"
-            />
-          </label>
+        <CardHeader
+          title="Update from a sheet"
+          description={
+            <>
+              Columns:{" "}
+              <code className="rounded bg-surface-muted px-1 py-0.5 font-mono text-xs">
+                course_code, date, start, end, topic, location
+              </code>
+              . Dates as 2026-10-22 or 22/10/2026, times as 09:00 or 9:00 AM. Rows with the same
+              class, date and start time update the existing entry. Nothing is applied if any row
+              has an error.
+            </>
+          }
+          action={
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  void download("/schedule/template.xlsx", "intelliclass-schedule-template.xlsx")
+                }
+              >
+                <Icon name="download" />
+                Download template
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!entries || entries.length === 0}
+                onClick={() => void download("/schedule/export.xlsx", "intelliclass-schedule.xlsx")}
+              >
+                <Icon name="download" />
+                Download current schedule as Excel
+              </Button>
+            </div>
+          }
+        />
+        <div className="flex max-w-xl flex-col gap-3">
+          <FileField
+            label="Excel or CSV file"
+            accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              void upload(file);
+            }}
+          />
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={replace}
               onChange={(e) => setReplace(e.target.checked)}
               disabled={uploading}
+              className="h-4 w-4"
             />
             Replace all upcoming dates of the classes in this sheet
           </label>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() =>
-              void download("/schedule/template.xlsx", "intelliclass-schedule-template.xlsx")
-            }
-          >
-            Download template
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={!entries || entries.length === 0}
-            onClick={() => void download("/schedule/export.xlsx", "intelliclass-schedule.xlsx")}
-          >
-            Download current schedule as Excel
-          </Button>
         </div>
-        {uploading && <Spinner label="Reading the sheet" />}
+        {uploading && (
+          <div className="mt-3">
+            <Spinner label="Reading the sheet" />
+          </div>
+        )}
         {result && !result.applied && (
-          <div
-            className="mt-3 rounded-card border border-red-200 bg-surface p-3 text-sm dark:border-red-900/60 dark:bg-slate-900"
-            role="alert"
-          >
+          <Notice tone="danger" className="mt-4" role="alert">
             <p className="font-medium">Nothing was changed. Fix these rows and upload again:</p>
             <ul className="mt-1 list-disc pl-5">
               {result.errors.map((line) => (
                 <li key={line}>{line}</li>
               ))}
             </ul>
-          </div>
+          </Notice>
         )}
       </Card>
 
