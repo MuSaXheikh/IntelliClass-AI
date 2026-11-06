@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Icon, type IconName } from "@/components/ui/Icon";
 
 export type ToastKind = "info" | "success" | "error";
 
@@ -29,12 +30,10 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-const KIND_CLASS: Record<ToastKind, string> = {
-  info: "border-line bg-surface text-ink dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100",
-  success:
-    "border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-100",
-  error:
-    "border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100",
+const KIND_ICON: Record<ToastKind, { name: IconName; className: string }> = {
+  info: { name: "info", className: "text-ink-muted" },
+  success: { name: "check-circle", className: "text-success-ink" },
+  error: { name: "alert-triangle", className: "text-danger-ink" },
 };
 
 const TOAST_MS = 4000;
@@ -70,24 +69,26 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((item) => (
           <div
             key={item.id}
-            className={`pointer-events-auto rounded-lg border p-3 shadow-md ${KIND_CLASS[item.kind]}`}
+            className="pointer-events-auto flex animate-rise items-start gap-2.5 rounded-lg border border-line bg-surface p-3 text-ink shadow-raised"
           >
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-sm font-medium">{item.title}</p>
-                {item.description && (
-                  <p className="mt-0.5 text-xs opacity-80">{item.description}</p>
-                )}
-              </div>
-              <button
-                type="button"
-                aria-label="Dismiss notification"
-                className="text-xs opacity-60 hover:opacity-100"
-                onClick={() => dismiss(item.id)}
-              >
-                ✕
-              </button>
+            <Icon
+              name={KIND_ICON[item.kind].name}
+              className={`mt-0.5 h-4 w-4 ${KIND_ICON[item.kind].className}`}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">{item.title}</p>
+              {item.description && (
+                <p className="mt-0.5 text-xs text-ink-muted">{item.description}</p>
+              )}
             </div>
+            <button
+              type="button"
+              aria-label="Dismiss notification"
+              className="-m-1 rounded p-1 text-ink-muted transition-colors duration-150 hover:text-ink"
+              onClick={() => dismiss(item.id)}
+            >
+              <Icon name="x" className="h-3.5 w-3.5" />
+            </button>
           </div>
         ))}
       </div>
