@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { ScheduleTable } from "@/components/schedule/ScheduleTable";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { api, ApiError } from "@/lib/api";
@@ -29,27 +31,24 @@ export default function StudentSchedulePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Schedule</h1>
-          <p className="text-sm text-ink-muted dark:text-slate-400">
-            Upcoming classes for the courses you are enrolled in. Cancelled classes stay listed so
-            you are not caught out.
-          </p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={!entries || entries.length === 0}
-          onClick={() =>
-            void api
-              .download("/schedule/export.xlsx", "intelliclass-schedule.xlsx")
-              .catch(() => toast.push({ kind: "error", title: "Download failed" }))
-          }
-        >
-          Download as Excel
-        </Button>
-      </div>
+      <PageHeader
+        title="Schedule"
+        description="Upcoming classes for the courses you are enrolled in. Cancelled classes stay listed so you are not caught out."
+        actions={
+          <Button
+            variant="secondary"
+            disabled={!entries || entries.length === 0}
+            onClick={() =>
+              void api
+                .download("/schedule/export.xlsx", "intelliclass-schedule.xlsx")
+                .catch(() => toast.push({ kind: "error", title: "Download failed" }))
+            }
+          >
+            <Icon name="download" />
+            Download as Excel
+          </Button>
+        }
+      />
       {entries === null ? (
         <Spinner label="Loading schedule" />
       ) : (

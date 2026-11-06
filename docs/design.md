@@ -42,6 +42,8 @@ Inspired by the University of Education logo (deep green + gold).
 | Text secondary | Slate 600 | `#475569` |
 | Border | Slate 200 | `#E2E8F0` |
 
+**Tokens (`frontend/src/app/globals.css`).** Components use semantic names (`bg-surface`, `text-ink-muted`, `border-line`, `text-primary-ink`, `text-danger-ink`, `bg-brand`) and never a per-element `dark:` override: the values flip once for dark mode, so the two themes cannot drift apart. The only exception is the status pills in `lib/status.ts`. The focus ring is green on light surfaces and gold on the green brand panel and in dark mode, because gold on white is nearly invisible.
+
 ### 2.2 Status Colours (Instructor Dashboard)
 Always pair colour with an **icon and text label**.
 
@@ -67,6 +69,8 @@ Severity ranking (top of list first): Sleepy → No face → Wrong screen → Lo
 | Dashboard labels | Inter | 14 / 500 |
 | Roll numbers / metrics | JetBrains Mono | 14 / 500 |
 | Urdu text (transcripts) | Noto Nastaliq Urdu (fallback) | 16 / 400 |
+
+Inter and JetBrains Mono are self-hosted through the `@fontsource-variable` packages, so the app still runs with no internet.
 
 ### 2.4 UI Component Scheme (Tailwind + shadcn-style)
 

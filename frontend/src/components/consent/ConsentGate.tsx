@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Icon, type IconName } from "@/components/ui/Icon";
+import { Notice } from "@/components/ui/Notice";
 import { describeMediaError } from "@/lib/media";
 
 interface ConsentGateProps {
@@ -11,6 +13,17 @@ interface ConsentGateProps {
   error: string | null;
   onJoin: () => void;
   onCancel: () => void;
+}
+
+function ConsentItem({ icon, children }: { icon: IconName; children: ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary-ink">
+        <Icon name={icon} />
+      </span>
+      <p className="min-w-0 text-sm leading-relaxed">{children}</p>
+    </li>
+  );
 }
 
 /** Pre-join notice (design.md Screen 4). Nothing is captured before "Allow & Join". */
@@ -51,40 +64,44 @@ export function ConsentGate({ className, busy, error, onJoin, onCancel }: Consen
   };
 
   return (
-    <Card className="mx-auto w-full max-w-xl">
-      <h1 className="text-lg font-semibold">Before you join: what is analysed</h1>
-      <p className="mt-1 text-sm text-ink-muted dark:text-slate-400">{className}</p>
-      <ul className="mt-4 space-y-2 text-sm">
-        <li>
-          ✔ <strong>Camera:</strong> eye state &amp; face direction (analysed{" "}
+    <Card pad="lg" className="mx-auto w-full max-w-2xl">
+      <p className="font-mono text-xs font-medium text-ink-muted">{className}</p>
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+        Before you join: what is analysed
+      </h1>
+      <ul className="mt-6 flex flex-col gap-4">
+        <ConsentItem icon="video">
+          <strong>Camera:</strong> eye state &amp; face direction (analysed{" "}
           <strong>on your device</strong>; no video is sent)
-        </li>
-        <li>
-          ✔ <strong>Screen:</strong> whether this class tab stays visible and in front. If you
-          choose to share your screen, your browser reads the words on it and compares them with the
-          slides <strong>on your device</strong>; only a match score is sent, never a screenshot or
-          the text.
-        </li>
-        <li>
-          ✔ <strong>Microphone:</strong> optional, to speak in class
-        </li>
-        <li>✘ We never record or store video or screens</li>
+        </ConsentItem>
+        <ConsentItem icon="monitor">
+          <strong>Screen:</strong> whether this class tab stays visible and in front. If you choose
+          to share your screen, your browser reads the words on it and compares them with the slides{" "}
+          <strong>on your device</strong>; only a match score is sent, never a screenshot or the
+          text.
+        </ConsentItem>
+        <ConsentItem icon="mic">
+          <strong>Microphone:</strong> optional, to speak in class
+        </ConsentItem>
       </ul>
+      <Notice tone="success" className="mt-5 font-medium">
+        We never record or store video or screens
+      </Notice>
       {testing && (
         <video
           ref={videoRef}
           muted
           playsInline
           aria-label="Camera preview"
-          className="mt-4 w-full rounded-lg bg-black"
+          className="mt-5 w-full rounded-lg bg-slate-950"
         />
       )}
       {testError && (
-        <p className="mt-2 text-sm text-red-600" role="alert">
+        <Notice tone="danger" className="mt-4" role="alert">
           {testError}
-        </p>
+        </Notice>
       )}
-      <label className="mt-4 flex items-center gap-2 text-sm">
+      <label className="mt-6 flex items-center gap-3 border-t border-line pt-5 text-sm font-medium">
         <input
           type="checkbox"
           checked={agreed}
@@ -94,18 +111,18 @@ export function ConsentGate({ className, busy, error, onJoin, onCancel }: Consen
         I understand and agree
       </label>
       {error && (
-        <p className="mt-2 text-sm text-red-600" role="alert">
+        <Notice tone="danger" className="mt-4" role="alert">
           {error}
-        </p>
+        </Notice>
       )}
-      <div className="mt-5 flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={testing ? stopTest : testCamera} disabled={busy}>
-          {testing ? "Stop test" : "Test camera"}
-        </Button>
+      <div className="mt-5 flex flex-wrap items-center gap-2">
         <Button onClick={onJoin} disabled={!agreed || busy}>
           {busy ? "Joining…" : "Allow & Join"}
         </Button>
-        <Button variant="ghost" onClick={onCancel} disabled={busy}>
+        <Button variant="secondary" onClick={testing ? stopTest : testCamera} disabled={busy}>
+          {testing ? "Stop test" : "Test camera"}
+        </Button>
+        <Button variant="ghost" onClick={onCancel} disabled={busy} className="sm:ml-auto">
           Cancel
         </Button>
       </div>

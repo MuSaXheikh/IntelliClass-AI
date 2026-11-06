@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { NUDGE_PRESETS } from "@/lib/config";
 
 interface NudgePopoverProps {
@@ -13,13 +14,15 @@ interface NudgePopoverProps {
 
 export function NudgePopover({ studentName, busy, onSend, onClose }: NudgePopoverProps) {
   const [custom, setCustom] = useState("");
+  const inputId = useId();
   return (
     <div
       role="dialog"
       aria-label={`Nudge ${studentName}`}
-      className="mt-2 flex flex-col gap-2 rounded-lg border border-line bg-surface p-3 shadow-md dark:border-slate-600 dark:bg-slate-800"
+      className="mt-3 flex animate-rise flex-col gap-3 rounded-lg bg-surface-muted p-3"
     >
-      <p className="text-xs text-ink-muted dark:text-slate-400">
+      <p className="flex items-center gap-1.5 text-xs text-ink-muted">
+        <Icon name="lock" className="h-3.5 w-3.5" />
         Only {studentName} will see this. Nobody else is notified.
       </p>
       <div className="flex flex-wrap gap-2">
@@ -42,24 +45,24 @@ export function NudgePopover({ studentName, busy, onSend, onClose }: NudgePopove
           if (custom.trim()) onSend(custom.trim());
         }}
       >
-        <label className="sr-only" htmlFor={`nudge-custom-${studentName}`}>
+        <label className="sr-only" htmlFor={inputId}>
           Custom message
         </label>
         <input
-          id={`nudge-custom-${studentName}`}
+          id={inputId}
           value={custom}
           onChange={(event) => setCustom(event.target.value)}
           maxLength={140}
           placeholder="Custom message"
-          className="flex-1 rounded-lg border border-line bg-surface px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900"
+          className="min-h-9 min-w-0 flex-1 rounded-lg border border-field bg-surface px-3 py-1 text-sm placeholder:text-ink-muted"
         />
         <Button type="submit" size="sm" disabled={busy || !custom.trim()}>
           Send
         </Button>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          Cancel
+        </Button>
       </form>
-      <Button variant="ghost" size="sm" onClick={onClose}>
-        Cancel
-      </Button>
     </div>
   );
 }

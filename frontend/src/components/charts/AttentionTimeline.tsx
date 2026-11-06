@@ -6,7 +6,6 @@ import type { TimelinePoint } from "@/types/contract";
 const W = 640;
 const H = 200;
 const PAD = { top: 12, right: 16, bottom: 28, left: 36 };
-const LINE = "#14532D"; // primary green; single series, so the title names it and no legend is needed
 
 interface Props {
   points: TimelinePoint[];
@@ -19,12 +18,15 @@ function scales(points: TimelinePoint[]) {
   return { x, y, maxMinute };
 }
 
-/** Class attention over the session, one line, with a crosshair tooltip and a table view. */
+/**
+ * Class attention over the session, with a crosshair tooltip and a table view. One series in the
+ * primary colour, so the card title names it and no legend is needed.
+ */
 export function AttentionTimeline({ points }: Props) {
   const [hover, setHover] = useState<number | null>(null);
   if (points.length < 2) {
     return (
-      <p className="text-sm text-ink-muted dark:text-slate-400">
+      <p className="text-sm text-ink-muted">
         The session was too short for a minute-by-minute timeline.
       </p>
     );
@@ -33,6 +35,8 @@ export function AttentionTimeline({ points }: Props) {
   const path = points
     .map((p, i) => `${i === 0 ? "M" : "L"}${x(p.minute)},${y(p.attentive_pct)}`)
     .join(" ");
+  const last = points[points.length - 1];
+  const area = `${path} L${x(last.minute)},${y(0)} L${x(points[0].minute)},${y(0)} Z`;
   const active = hover === null ? null : points[hover];
 
   const onMove = (event: PointerEvent<SVGSVGElement>) => {
@@ -64,14 +68,14 @@ export function AttentionTimeline({ points }: Props) {
               x2={W - PAD.right}
               y1={y(tick)}
               y2={y(tick)}
-              className="stroke-slate-200 dark:stroke-slate-700"
+              className="stroke-line"
               strokeWidth={1}
             />
             <text
               x={PAD.left - 6}
               y={y(tick) + 4}
               textAnchor="end"
-              className="fill-slate-500 text-[11px] dark:fill-slate-400"
+              className="fill-ink-muted text-[11px]"
             >
               {tick}%
             </text>
@@ -83,12 +87,19 @@ export function AttentionTimeline({ points }: Props) {
             x={x(minute)}
             y={H - 8}
             textAnchor={minute === 0 ? "start" : "end"}
-            className="fill-slate-500 text-[11px] dark:fill-slate-400"
+            className="fill-ink-muted text-[11px]"
           >
             {minute} min
           </text>
         ))}
-        <path d={path} fill="none" stroke={LINE} strokeWidth={2} strokeLinejoin="round" />
+        <path d={area} className="fill-primary-ink/10" />
+        <path
+          d={path}
+          fill="none"
+          className="stroke-primary-ink"
+          strokeWidth={2}
+          strokeLinejoin="round"
+        />
         {active && (
           <g>
             <line
@@ -96,16 +107,14 @@ export function AttentionTimeline({ points }: Props) {
               x2={x(active.minute)}
               y1={PAD.top}
               y2={H - PAD.bottom}
-              className="stroke-slate-400"
+              className="stroke-line-strong"
               strokeDasharray="3 3"
             />
-            <circle cx={x(active.minute)} cy={y(active.attentive_pct)} r={5} fill={LINE} />
             <circle
               cx={x(active.minute)}
               cy={y(active.attentive_pct)}
-              r={7}
-              fill="none"
-              stroke="#fff"
+              r={5}
+              className="fill-primary-ink stroke-surface"
               strokeWidth={2}
             />
           </g>
@@ -113,7 +122,7 @@ export function AttentionTimeline({ points }: Props) {
       </svg>
       {active && (
         <div
-          className="pointer-events-none absolute top-2 rounded-md border border-line bg-surface px-2 py-1 text-xs shadow-sm dark:border-slate-600 dark:bg-slate-800"
+          className="pointer-events-none absolute top-2 rounded-md border border-line bg-surface px-2 py-1 text-xs shadow-sm"
           style={{ left: `${(100 * x(active.minute)) / W}%`, transform: "translateX(-50%)" }}
           role="status"
         >
@@ -121,7 +130,7 @@ export function AttentionTimeline({ points }: Props) {
           {active.attentive_pct.toFixed(0)}% attentive · {active.students} counted
         </div>
       )}
-      <details className="mt-2 text-xs text-ink-muted dark:text-slate-400">
+      <details className="mt-2 text-xs text-ink-muted">
         <summary className="cursor-pointer">Show as table</summary>
         <table className="mt-2 w-full text-left">
           <thead>

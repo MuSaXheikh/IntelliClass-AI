@@ -1,11 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
+import { LiveBadge } from "@/components/ui/LiveBadge";
 import { Modal } from "@/components/ui/Modal";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
@@ -65,46 +67,66 @@ export default function ClassManagerPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Classes</h1>
-        <Button onClick={() => setOpen(true)}>Create Class</Button>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Classes"
+        description="Manage your rosters and slides, and start a live class."
+        actions={
+          <Button onClick={() => setOpen(true)}>
+            <Icon name="plus" />
+            Create Class
+          </Button>
+        }
+      />
       {classes === null ? (
         <Spinner label="Loading classes" />
       ) : classes.length === 0 ? (
-        <EmptyState title="No classes yet">
-          Create your first class to enrol students and upload slides.
+        <EmptyState
+          title="No classes yet"
+          icon="layers"
+          action={<Button onClick={() => setOpen(true)}>Create your first class</Button>}
+        >
+          Create a class to enrol students and upload slides.
         </EmptyState>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {classes.map((cls) => (
             <li key={cls.id}>
-              <Card className="flex h-full flex-col gap-2">
-                <div>
-                  <p className="font-mono text-xs text-ink-muted dark:text-slate-400">
-                    {cls.course_code}
-                  </p>
-                  <h2 className="text-lg font-semibold">{cls.name}</h2>
+              <Card className="flex h-full flex-col gap-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs font-medium text-ink-muted">
+                      {cls.course_code}
+                    </p>
+                    <h2 className="mt-0.5 text-lg font-semibold">{cls.name}</h2>
+                  </div>
+                  {cls.live_session_id && <LiveBadge />}
                 </div>
-                <p className="text-sm text-ink-muted dark:text-slate-400">
-                  {cls.student_count} enrolled · {cls.slide_count} slides
+                <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Icon name="users" />
+                    {cls.student_count} enrolled
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Icon name="layers" />
+                    {cls.slide_count} slides
+                  </span>
                 </p>
-                {cls.live_session_id && (
-                  <p className="text-xs font-medium text-green-700 dark:text-green-300">
-                    ● Live now
-                  </p>
-                )}
-                <div className="mt-auto flex gap-2 pt-2">
-                  <Link href={`/instructor/classes/${cls.id}`} className="flex-1">
-                    <Button variant="secondary" className="w-full">
-                      Manage
-                    </Button>
-                  </Link>
+                <div className="mt-auto flex gap-2 border-t border-line pt-4">
+                  <ButtonLink
+                    href={`/instructor/classes/${cls.id}`}
+                    variant="secondary"
+                    className="flex-1"
+                  >
+                    Manage
+                  </ButtonLink>
                   {cls.live_session_id && (
-                    <Link href={`/instructor/sessions/${cls.live_session_id}`} className="flex-1">
-                      <Button className="w-full">Open live class</Button>
-                    </Link>
+                    <ButtonLink
+                      href={`/instructor/sessions/${cls.live_session_id}`}
+                      className="flex-1"
+                    >
+                      Open live class
+                    </ButtonLink>
                   )}
                 </div>
               </Card>

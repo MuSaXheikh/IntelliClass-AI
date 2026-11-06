@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/ui/Icon";
 import { useAuthedImage } from "@/hooks/useAuthedImage";
 
 interface SlideImageProps {
@@ -16,12 +17,13 @@ export function SlideImage({ classId, index, alt, version }: SlideImageProps) {
   const path = index === null ? null : `/classes/${classId}/slides/${index}/image${suffix}`;
   const { url, failed } = useAuthedImage(path);
   return (
-    <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-card border border-line bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+    <div className="flex aspect-video w-full items-center justify-center overflow-hidden rounded-card border border-line bg-surface-muted">
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element -- blob URL from an authenticated fetch; next/image cannot optimise it
         <img src={url} alt={alt} className="h-full w-full object-contain" />
       ) : (
-        <p className="text-sm text-ink-muted dark:text-slate-400">
+        <p className="flex items-center gap-2 p-2 text-sm text-ink-muted">
+          {(index === null || failed) && <Icon name="layers" className="h-4 w-4" />}
           {index === null ? "No slides uploaded" : failed ? "Slide unavailable" : "Loading slide…"}
         </p>
       )}

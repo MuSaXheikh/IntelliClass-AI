@@ -18,7 +18,7 @@ export function StateStackBar({ seconds, label, className = "" }: Props) {
   if (shares.length === 0) {
     return (
       <div
-        className={`h-3 w-full rounded bg-slate-100 dark:bg-slate-800 ${className}`}
+        className={`h-3 w-full rounded bg-surface-muted ${className}`}
         role="img"
         aria-label={`${label}: no data`}
       />

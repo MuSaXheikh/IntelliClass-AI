@@ -2,6 +2,7 @@
 
 import { SlideImage } from "@/components/classroom/SlideImage";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 
 interface SlideStageProps {
   classId: string;
@@ -21,25 +22,31 @@ export function SlideStage({ classId, slideCount, currentIndex, busy, onChange }
         index={hasSlides ? currentIndex : null}
         alt={`Slide ${currentIndex + 1} of ${slideCount}`}
       />
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <Button
           variant="secondary"
-          size="sm"
           disabled={!hasSlides || busy || currentIndex <= 0}
           onClick={() => onChange(currentIndex - 1)}
         >
-          ◀ Prev
+          <Icon name="chevron-left" />
+          Previous
         </Button>
-        <p className="font-mono text-sm" aria-live="polite">
-          {hasSlides ? `slide ${currentIndex + 1}/${slideCount}` : "no slides"}
+        <p className="font-mono text-sm text-ink-muted tabular-nums" aria-live="polite">
+          {hasSlides ? (
+            <>
+              Slide <span className="font-semibold text-ink">{currentIndex + 1}</span> of{" "}
+              {slideCount}
+            </>
+          ) : (
+            "No slides"
+          )}
         </p>
         <Button
-          variant="secondary"
-          size="sm"
           disabled={!hasSlides || busy || currentIndex >= slideCount - 1}
           onClick={() => onChange(currentIndex + 1)}
         >
-          Next ▶
+          Next
+          <Icon name="chevron-right" />
         </Button>
       </div>
     </section>

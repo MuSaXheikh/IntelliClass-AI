@@ -11,12 +11,10 @@ export function StatTile({
   hint?: string;
 }) {
   return (
-    <div className="rounded-card border border-line bg-surface p-4 dark:border-slate-700 dark:bg-slate-900">
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-muted dark:text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
-      {hint && <p className="mt-0.5 text-xs text-ink-muted dark:text-slate-400">{hint}</p>}
+    <div className="rounded-card border border-line bg-surface p-5 shadow-card">
+      <p className="text-sm font-medium text-ink-muted">{label}</p>
+      <p className="mt-2 font-mono text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
+      {hint && <p className="mt-1 text-xs text-ink-muted">{hint}</p>}
     </div>
   );
 }

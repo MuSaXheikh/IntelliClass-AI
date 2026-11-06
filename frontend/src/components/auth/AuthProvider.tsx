@@ -49,9 +49,18 @@ function forgetSession(): void {
   setToken(null);
 }
 
+const subscribeNever = () => () => undefined;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const token = useSyncExternalStore(subscribeToken, getToken, () => null);
+  // The first client render must match the server HTML, so the stored token only appears on the
+  // next render. Until then "no token" means "not read yet", not "signed out".
+  const hydrated = useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
   const [validated, setValidated] = useState<Validated | null>(null);
 
   // A stored token is only trusted once GET /me confirms it. A network or server hiccup keeps
@@ -114,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const user = validated && validated.token === token ? validated.user : null;
-  const loading = token !== null && user === null;
+  const loading = !hydrated || (token !== null && user === null);
 
   const applySession = useCallback((response: LoginResponse) => {
     writeLocal(AUTH_USER_KEY, JSON.stringify(response.user));
