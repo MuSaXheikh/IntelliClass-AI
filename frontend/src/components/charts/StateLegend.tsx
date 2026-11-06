@@ -7,7 +7,7 @@ import type { StudentState } from "@/types/contract";
 export function StateLegend({ states }: { states: readonly StudentState[] }) {
   if (states.length === 0) return null;
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted dark:text-slate-400">
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted">
       {states.map((state) => (
         <li key={state} className="flex items-center gap-1.5">
           <span

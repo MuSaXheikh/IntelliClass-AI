@@ -7,7 +7,7 @@ import type { StudentState } from "@/types/contract";
 export function TypeBars({ counts }: { counts: Partial<Record<StudentState, number>> }) {
   const rows = orderedCounts(counts);
   if (rows.length === 0) {
-    return <p className="text-sm text-ink-muted dark:text-slate-400">No alerts were raised.</p>;
+    return <p className="text-sm text-ink-muted">No alerts were raised.</p>;
   }
   const max = rows[0].count;
   return (
@@ -18,7 +18,7 @@ export function TypeBars({ counts }: { counts: Partial<Record<StudentState, numb
             <Icon name={STATUS_META[state].icon} className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{STATUS_META[state].label}</span>
           </span>
-          <span className="h-3 w-full rounded bg-slate-100 dark:bg-slate-800">
+          <span className="h-3 w-full rounded bg-surface-muted">
             <span
               className="block h-full rounded"
               style={{ width: `${(100 * count) / max}%`, backgroundColor: CHART_COLOR[state] }}
