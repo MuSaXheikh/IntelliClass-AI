@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { NudgePopover } from "@/components/classroom/NudgePopover";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { sortAlerts } from "@/lib/status";
 import type { Alert } from "@/types/contract";
@@ -14,55 +15,55 @@ interface AlertPanelProps {
   onNudge: (alert: Alert, message: string) => void;
 }
 
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
 /** Ranked, grouped live alerts with a one-tap private nudge (design.md Screen 5). */
 export function AlertPanel({ alerts, nudgingId, onNudge }: AlertPanelProps) {
   const [openFor, setOpenFor] = useState<string | null>(null);
   const sorted = useMemo(() => sortAlerts(alerts).filter((a) => a.status !== "resolved"), [alerts]);
 
   return (
-    <section aria-label="Live alerts" className="flex flex-col gap-2">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted dark:text-slate-400">
-        Live alerts
-      </h2>
+    <section
+      aria-label="Live alerts"
+      className="overflow-hidden rounded-card border border-line bg-surface shadow-card"
+    >
+      <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <Icon name="bell" className="h-4 w-4 text-ink-muted" />
+          Live alerts
+        </h2>
+        {sorted.length > 0 && (
+          <span className="rounded-full bg-surface-muted px-2 py-0.5 font-mono text-xs font-medium tabular-nums">
+            {sorted.length}
+          </span>
+        )}
+      </div>
       {sorted.length === 0 ? (
-        <EmptyState title="All quiet">Nobody needs attention right now.</EmptyState>
+        <div className="flex items-center gap-3 px-4 py-5 text-sm">
+          <Icon name="check-circle" className="h-5 w-5 text-success-ink" />
+          <div>
+            <p className="font-medium">All quiet</p>
+            <p className="text-ink-muted">Nobody needs attention right now.</p>
+          </div>
+        </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="divide-y divide-line">
           {sorted.map((alert) => (
-            <li
-              key={alert.id}
-              className="rounded-lg border border-line bg-surface p-3 dark:border-slate-700 dark:bg-slate-900"
-            >
+            <li key={alert.id} className="animate-rise p-3">
               <div className="flex items-center gap-3">
-                <span
-                  aria-hidden="true"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold dark:bg-slate-700"
-                >
-                  {initials(alert.full_name)}
-                </span>
+                <Avatar name={alert.full_name} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
                     {alert.full_name}
                     {alert.roll_no && (
-                      <span className="ml-2 font-mono text-xs text-ink-muted dark:text-slate-400">
+                      <span className="ml-2 font-mono text-xs font-normal text-ink-muted">
                         {alert.roll_no}
                       </span>
                     )}
                   </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-muted dark:text-slate-400">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
                     <StatusBadge state={alert.type} />
-                    <span>{Math.round(alert.duration_s)} s</span>
+                    <span className="font-mono tabular-nums">{Math.round(alert.duration_s)} s</span>
                     {alert.grouped_count > 1 && (
-                      <span className="rounded-full bg-slate-200 px-2 py-0.5 font-mono dark:bg-slate-700">
+                      <span className="rounded-full bg-surface-muted px-2 py-0.5 font-mono">
                         ×{alert.grouped_count}
                       </span>
                     )}
@@ -70,6 +71,7 @@ export function AlertPanel({ alerts, nudgingId, onNudge }: AlertPanelProps) {
                 </div>
                 <Button
                   size="sm"
+                  variant="secondary"
                   aria-expanded={openFor === alert.id}
                   onClick={() => setOpenFor(openFor === alert.id ? null : alert.id)}
                 >
