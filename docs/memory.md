@@ -213,6 +213,8 @@ NEXT_PUBLIC_LIVEKIT_URL=
 
 | Date | Update |
 |------|--------|
+| 2026-11-07 (pm) | **Next.js 16.4.0 → 16.4.5** (critical advisories fixed in 16.4.1; `pnpm audit --prod` clean). **Refresh bug fixed**: `AuthProvider` reports `loading` until hydration, so a hard reload no longer redirects a signed-in user to `/login` and on to their home page (regression test `tests/unit/RequireRole.test.tsx`). |
+| 2026-11-07 | **UI redesign**: semantic light/dark tokens replace per-element `dark:` classes, self-hosted Inter and JetBrains Mono, one icon set, new shared components (`PageHeader`, `ButtonLink`, `Notice`, `LiveBadge`, `FileField`), green brand sidebar, every screen restyled to `design.md`. Presentation only: no API, auth or vision logic changed. |
 | 2026-10 | Proposal approved; project docs generated; setup phase beginning |
 | 2026-10-17 | **Screen compliance (Phase 4, FE-12/BE-09)** built: optional on-device screen share → pHash → tesseract.js OCR → slide-word containment → `screen.score`; server merges low fresh scores into `wrong_screen`. Class report PDF, schedule with Excel import/export, deploy config (Render/Vercel/Supabase) also landed on 16 Oct. |
 | 2026-10-16 (pm) | **Full-project review and hardening**: both feature branches merged into `develop`/`main`; ~30 confirmed defects fixed (token refresh + 401 handling, socket stops on 4401/4403 and authenticates by subprotocol, ended/rejected states, atomic off-loop deck replacement with ETag images, NaN rejection, bcrypt limit, audit gaps, consent-gated sockets, idle auto-end, compose stack exercised, tests never touch the real bucket). Backend 58 tests, frontend 55. See `progress.md` "Hardening review". |
