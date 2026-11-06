@@ -7,6 +7,7 @@ import { AuthCard } from "@/components/auth/AuthCard";
 import { homePathFor, useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Notice } from "@/components/ui/Notice";
 import { ApiError } from "@/lib/api";
 
 type RegisterRole = "student" | "instructor";
@@ -49,36 +50,40 @@ export default function RegisterPage() {
   };
 
   return (
-    <AuthCard title="Create your account">
+    <AuthCard title="Create your account" subtitle="It takes less than a minute.">
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <fieldset className="flex gap-2">
-          <legend className="mb-1 text-sm font-medium">I am a</legend>
-          {(["student", "instructor"] as const).map((option) => (
-            <label
-              key={option}
-              className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm capitalize ${role === option ? "border-primary bg-primary/10 font-medium text-primary dark:text-green-200" : "border-line dark:border-slate-600"}`}
-            >
-              <input
-                type="radio"
-                name="role"
-                value={option}
-                checked={role === option}
-                onChange={() => setRole(option)}
-                className="sr-only"
-              />
-              {option}
-            </label>
-          ))}
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium">I am a</legend>
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-surface-muted p-1">
+            {(["student", "instructor"] as const).map((option) => (
+              <label
+                key={option}
+                className={`flex min-h-9 items-center justify-center rounded-md text-sm font-medium capitalize transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring ${role === option ? "bg-surface text-ink shadow-card" : "text-ink-muted hover:text-ink"}`}
+              >
+                <input
+                  type="radio"
+                  name="role"
+                  value={option}
+                  checked={role === option}
+                  onChange={() => setRole(option)}
+                  className="sr-only"
+                />
+                {option}
+              </label>
+            ))}
+          </div>
         </fieldset>
         <Input
           label="Full name"
           required
+          autoComplete="name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
         />
         <Input
           label="Email"
           type="email"
+          autoComplete="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -103,17 +108,17 @@ export default function RegisterPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
         {error && (
-          <p className="text-sm text-red-600" role="alert">
+          <Notice tone="danger" role="alert">
             {error}
-          </p>
+          </Notice>
         )}
         <Button type="submit" disabled={busy}>
           {busy ? "Creating…" : "Create account"}
         </Button>
       </form>
-      <p className="mt-4 text-center text-sm text-ink-muted dark:text-slate-400">
+      <p className="mt-6 text-center text-sm text-ink-muted">
         Already registered?{" "}
-        <Link href="/login" className="font-medium text-primary underline dark:text-green-300">
+        <Link href="/login" className="font-medium text-primary-ink underline">
           Sign in
         </Link>
       </p>
