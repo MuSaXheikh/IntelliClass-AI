@@ -1,17 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { SessionRows } from "@/components/classroom/SessionRows";
 import { SlideImage } from "@/components/classroom/SlideImage";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Avatar } from "@/components/ui/Avatar";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Card, CardHeader } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
+import { FileField, TextArea } from "@/components/ui/Input";
+import { LiveBadge } from "@/components/ui/LiveBadge";
 import { Modal } from "@/components/ui/Modal";
 import { Spinner } from "@/components/ui/Spinner";
-import { TextArea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { api, ApiError } from "@/lib/api";
-import { formatDateTime } from "@/lib/report";
 import type {
   ClassSummary,
   EnrolResponse,
@@ -147,26 +150,31 @@ export default function ClassDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="font-mono text-xs text-ink-muted dark:text-slate-400">{cls.course_code}</p>
-          <h1 className="text-2xl font-bold">{cls.name}</h1>
-        </div>
-        {cls.live_session_id ? (
-          <Button onClick={() => router.push(`/instructor/sessions/${cls.live_session_id}`)}>
-            Open live class
-          </Button>
-        ) : (
-          <Button onClick={start} disabled={busy === "start"}>
-            {busy === "start" ? "Starting…" : "Start Live Class"}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        back={{ href: "/instructor", label: "All classes" }}
+        eyebrow={cls.course_code}
+        title={cls.name}
+        actions={
+          cls.live_session_id ? (
+            <>
+              <LiveBadge />
+              <ButtonLink href={`/instructor/sessions/${cls.live_session_id}`}>
+                Open live class
+              </ButtonLink>
+            </>
+          ) : (
+            <Button onClick={start} disabled={busy === "start"}>
+              <Icon name="play" />
+              {busy === "start" ? "Starting…" : "Start Live Class"}
+            </Button>
+          )
+        }
+      />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
-          <h2 className="mb-2 text-lg font-semibold">Students ({students.length})</h2>
-          <form onSubmit={enrol} className="flex flex-col gap-2">
+          <CardHeader title="Students" count={students.length} />
+          <form onSubmit={enrol} className="flex flex-col gap-3">
             <TextArea
               label="Enrol by roll number"
               hint="Paste roll numbers separated by spaces, commas or new lines"
@@ -178,61 +186,65 @@ export default function ClassDetailPage() {
               {busy === "enrol" ? "Enrolling…" : "Enrol"}
             </Button>
           </form>
-          <ul className="mt-4 max-h-64 divide-y divide-line overflow-y-auto text-sm dark:divide-slate-700">
+          <ul className="mt-5 max-h-64 divide-y divide-line overflow-y-auto border-t border-line text-sm">
             {students.map((s) => (
-              <li key={s.id} className="flex justify-between py-1.5">
-                <span>{s.full_name}</span>
-                <span className="font-mono text-xs text-ink-muted dark:text-slate-400">
-                  {s.roll_no}
-                </span>
+              <li key={s.id} className="flex items-center gap-3 py-2">
+                <Avatar name={s.full_name} className="h-7 w-7" />
+                <span className="min-w-0 flex-1 truncate">{s.full_name}</span>
+                <span className="font-mono text-xs text-ink-muted">{s.roll_no}</span>
               </li>
             ))}
             {students.length === 0 && (
-              <li className="py-2 text-ink-muted dark:text-slate-400">Nobody enrolled yet</li>
+              <li className="py-4 text-center text-ink-muted">Nobody enrolled yet</li>
             )}
           </ul>
         </Card>
 
         <Card>
-          <h2 className="mb-2 text-lg font-semibold">Slides ({slides.length})</h2>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">
-              {slides.length > 0
+          <CardHeader
+            title="Slides"
+            count={slides.length}
+            action={
+              slides.length > 0 ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy !== null || isLive}
+                  onClick={() => setConfirm("remove")}
+                >
+                  <Icon name="trash" />
+                  Remove deck
+                </Button>
+              ) : undefined
+            }
+          />
+          <FileField
+            label={
+              slides.length > 0
                 ? "Replace deck (PDF or PowerPoint)"
-                : "Upload lecture slides (PDF or PowerPoint)"}
-            </span>
-            <input
-              type="file"
-              accept=".pdf,.ppt,.pptx,.odp,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.presentation"
-              disabled={busy !== null || isLive}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = "";
-                void upload(file);
-              }}
-              className="text-sm"
-            />
-          </label>
-          <p className="mt-1 text-xs text-ink-muted dark:text-slate-400">
-            {isLive
-              ? "End the live class before changing the slides."
-              : slides.length > 0
-                ? "Uploading a new file replaces every slide."
-                : "PDF, PowerPoint or ODP, up to 40 MB."}
-          </p>
-          {slides.length > 0 && (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="mt-2"
-              disabled={busy !== null || isLive}
-              onClick={() => setConfirm("remove")}
-            >
-              Remove deck
-            </Button>
+                : "Upload lecture slides (PDF or PowerPoint)"
+            }
+            hint={
+              isLive
+                ? "End the live class before changing the slides."
+                : slides.length > 0
+                  ? "Uploading a new file replaces every slide."
+                  : "PDF, PowerPoint or ODP, up to 40 MB."
+            }
+            accept=".pdf,.ppt,.pptx,.odp,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.presentation"
+            disabled={busy !== null || isLive}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              void upload(file);
+            }}
+          />
+          {busy === "upload" && (
+            <div className="mt-3">
+              <Spinner label="Processing slides" />
+            </div>
           )}
-          {busy === "upload" && <Spinner label="Processing slides" />}
-          <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {slides.map((slide) => (
               <li key={slide.index} className="text-xs">
                 <SlideImage
@@ -241,7 +253,7 @@ export default function ClassDetailPage() {
                   alt={`Slide ${slide.index + 1}`}
                   version={slide.id}
                 />
-                <p className="mt-1 truncate text-ink-muted dark:text-slate-400">
+                <p className="mt-1 truncate text-ink-muted">
                   {slide.index + 1}. {slide.text_preview || "(no text)"}
                 </p>
               </li>
@@ -251,51 +263,31 @@ export default function ClassDetailPage() {
       </div>
 
       <Card>
-        <h2 className="mb-2 text-lg font-semibold">Sessions ({sessions.length})</h2>
+        <CardHeader title="Sessions" count={sessions.length} />
         {sessions.length === 0 ? (
-          <p className="text-sm text-ink-muted dark:text-slate-400">No class held yet.</p>
+          <p className="text-sm text-ink-muted">No class held yet.</p>
         ) : (
-          <ul className="divide-y divide-line text-sm dark:divide-slate-700">
-            {sessions.map((s) => (
-              <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span>
-                  {formatDateTime(s.started_at)}
-                  <span className="ml-2 text-xs text-ink-muted dark:text-slate-400">
-                    {s.status === "live" ? "● live" : "ended"}
-                  </span>
-                </span>
-                <Link
-                  href={`/instructor/sessions/${s.id}/report`}
-                  className="text-primary underline-offset-2 hover:underline dark:text-green-300"
-                >
-                  {s.status === "live" ? "Report so far" : "Open report"}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <SessionRows sessions={sessions} />
         )}
       </Card>
 
-      <Card className="border-red-200 dark:border-red-900/60">
-        <h2 className="mb-1 text-lg font-semibold">Delete class</h2>
-        <p className="text-sm text-ink-muted dark:text-slate-400">
-          Removes the roster, the deck, every session and its alerts and nudges, and the reports
-          built from them. This cannot be undone.
-        </p>
+      <Card className="flex flex-wrap items-center justify-between gap-4 border-danger-line">
+        <div className="min-w-0 max-w-prose flex-1 basis-72">
+          <h2 className="text-base font-semibold">Delete class</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Removes the roster, the deck, every session and its alerts and nudges, and the reports
+            built from them. This cannot be undone.
+          </p>
+          {isLive && <p className="mt-1 text-xs text-ink-muted">End the live class first.</p>}
+        </div>
         <Button
           variant="destructive"
-          size="sm"
-          className="mt-3"
           disabled={busy !== null || isLive}
           onClick={() => setConfirm("delete")}
         >
+          <Icon name="trash" />
           Delete class
         </Button>
-        {isLive && (
-          <p className="mt-2 text-xs text-ink-muted dark:text-slate-400">
-            End the live class first.
-          </p>
-        )}
       </Card>
 
       <Modal open={confirm === "remove"} title="Remove the deck?" onClose={() => setConfirm(null)}>
