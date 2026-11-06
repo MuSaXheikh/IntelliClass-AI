@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { Icon } from "@/components/ui/Icon";
 
 interface ModalProps {
   open: boolean;
@@ -28,10 +29,20 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
       onClick={(event) => {
         if (event.target === ref.current) onClose();
       }}
-      className="m-auto w-full max-w-lg rounded-card border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-black/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+      className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-card border border-line bg-surface p-0 text-ink shadow-raised backdrop:bg-slate-950/50 open:animate-rise"
     >
-      <div className="p-5" onClick={(event) => event.stopPropagation()}>
-        <h2 className="mb-4 text-lg font-semibold">{title}</h2>
+      <div className="p-6" onClick={(event) => event.stopPropagation()}>
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="-m-1 rounded-md p-1 text-ink-muted transition-colors duration-150 hover:bg-surface-muted hover:text-ink"
+          >
+            <Icon name="x" className="h-5 w-5" />
+          </button>
+        </div>
         {children}
       </div>
     </dialog>
