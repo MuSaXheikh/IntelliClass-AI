@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { Card, CardHeader } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
@@ -154,16 +155,14 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        <p className="text-sm text-ink-muted dark:text-slate-400">
-          Your account, and how patient the alert engine is in the classes you run.
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Your account, and how patient the alert engine is in the classes you run."
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <h2 className="mb-3 text-lg font-semibold">Profile</h2>
+          <CardHeader title="Profile" />
           <form onSubmit={(e) => void saveProfile(e)} className="flex flex-col gap-3">
             <Input
               label="Full name"
@@ -189,7 +188,7 @@ export default function SettingsPage() {
         </Card>
 
         <Card>
-          <h2 className="mb-3 text-lg font-semibold">Password</h2>
+          <CardHeader title="Password" />
           <form onSubmit={(e) => void changePassword(e)} className="flex flex-col gap-3">
             <Input
               label="Current password"
@@ -228,18 +227,16 @@ export default function SettingsPage() {
       </div>
 
       <Card>
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-lg font-semibold">Alert preferences</h2>
-          <span className="text-xs font-medium uppercase tracking-wide text-ink-muted dark:text-slate-400">
-            {prefs.customised ? "Customised" : "Using defaults"}
-          </span>
-        </div>
-        <p className="mt-1 max-w-prose text-sm text-ink-muted dark:text-slate-400">
-          How long a condition must last before a student is flagged, and how often alerts and
-          nudges may repeat. Changes apply to classes you start after saving; a class already
-          running keeps the settings it started with.
-        </p>
-        <form onSubmit={(e) => void savePreferences(e)} className="mt-4 grid gap-4 sm:grid-cols-2">
+        <CardHeader
+          title="Alert preferences"
+          description="How long a condition must last before a student is flagged, and how often alerts and nudges may repeat. Changes apply to classes you start after saving; a class already running keeps the settings it started with."
+          action={
+            <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-ink-muted">
+              {prefs.customised ? "Customised" : "Using defaults"}
+            </span>
+          }
+        />
+        <form onSubmit={(e) => void savePreferences(e)} className="grid gap-5 sm:grid-cols-2">
           {ALERT_FIELDS.map((field) => (
             <Input
               key={field.key}
@@ -257,7 +254,7 @@ export default function SettingsPage() {
               }`}
             />
           ))}
-          <div className="flex flex-wrap gap-2 sm:col-span-2">
+          <div className="flex flex-wrap gap-2 border-t border-line pt-4 sm:col-span-2">
             <Button type="submit" disabled={busy !== null}>
               {busy === "prefs" ? "Saving…" : "Save preferences"}
             </Button>
