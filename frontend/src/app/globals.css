@@ -1,39 +1,142 @@
 @import "tailwindcss";
 
-/* Design tokens from docs/design.md §2 (University of Education green + gold). */
+/*
+ * Design tokens from docs/design.md §2 (University of Education green + gold).
+ * Components use these semantic names and never a per-element dark: override: the values
+ * below flip once for dark mode, so light and dark cannot drift apart.
+ */
 @theme {
   --color-primary: #14532d;
   --color-primary-hover: #166534;
+  --color-on-primary: #ffffff;
+  --color-primary-ink: #14532d;
+  --color-primary-soft: #ecfdf3;
   --color-accent: #facc15;
+  --color-accent-soft: #fefce8;
+  --color-accent-line: #eab308;
   --color-page: #f8fafc;
   --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
   --color-ink: #0f172a;
   --color-ink-muted: #475569;
   --color-line: #e2e8f0;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --color-line-strong: #cbd5e1;
+  --color-field: #7c8aa0; /* input boundary: 3:1 against the surface (WCAG 1.4.11) */
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-ink: #b91c1c;
+  --color-danger-soft: #fef2f2;
+  --color-danger-line: #fecaca;
+  --color-success-ink: #15803d;
+  --color-success-soft: #f0fdf4;
+  --color-success-line: #bbf7d0;
+  --color-ring: #15803d;
+  --color-brand: #14532d;
+  --color-brand-deep: #0f3f22;
+  --color-on-brand: #f0fdf4;
+  --color-on-brand-muted: #bbf7d0;
+
+  --font-sans:
+    "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
   --radius-card: 12px;
-}
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.05);
+  --shadow-raised: 0 12px 32px -8px rgb(15 23 42 / 0.25);
 
-html,
-body {
-  height: 100%;
-}
+  --animate-rise: rise 160ms ease-out;
 
-body {
-  background: var(--color-page);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #0f172a;
-    color: #f1f5f9;
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #15803d;
+    --color-primary-hover: #166534;
+    --color-primary-ink: #86efac;
+    --color-primary-soft: rgb(34 197 94 / 0.14);
+    --color-accent-soft: rgb(250 204 21 / 0.1);
+    --color-page: #0f172a;
+    --color-surface: #1e293b;
+    --color-surface-muted: #273449;
+    --color-ink: #f1f5f9;
+    --color-ink-muted: #a3b1c6;
+    --color-line: #334155;
+    --color-line-strong: #475569;
+    --color-field: #7f8ea6;
+    --color-danger-ink: #fca5a5;
+    --color-danger-soft: rgb(220 38 38 / 0.14);
+    --color-danger-line: rgb(248 113 113 / 0.4);
+    --color-success-ink: #86efac;
+    --color-success-soft: rgb(34 197 94 / 0.12);
+    --color-success-line: rgb(74 222 128 / 0.35);
+    --color-ring: #facc15;
+    --color-brand: #0d3520;
+    --color-brand-deep: #0a2a19;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-raised: 0 12px 32px -8px rgb(0 0 0 / 0.6);
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    letter-spacing: -0.011em;
+  }
+
+  button:not(:disabled),
+  summary,
+  select,
+  label:has(input[type="checkbox"]:not(:disabled)),
+  label:has(input[type="radio"]:not(:disabled)),
+  input[type="file"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--color-primary);
+  }
+
+  /* The ring reads its colour from a variable, so a section on the green brand panel can swap it. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }
