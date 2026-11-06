@@ -6,9 +6,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AlertPanel } from "@/components/classroom/AlertPanel";
 import { ClassStrip } from "@/components/classroom/ClassStrip";
+import { ConnectionPill } from "@/components/classroom/ConnectionPill";
+import { ElapsedTime } from "@/components/classroom/ElapsedTime";
 import { SlideStage } from "@/components/classroom/SlideStage";
 import { StudentList } from "@/components/classroom/StudentList";
 import { Button } from "@/components/ui/Button";
+import { LiveBadge } from "@/components/ui/LiveBadge";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/components/ui/Toast";
 import { useSessionSocket } from "@/hooks/useSessionSocket";
@@ -170,20 +173,19 @@ export default function InstructorLiveRoomPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold">Live class</h1>
-          <span className="text-xs text-ink-muted dark:text-slate-400">
-            connection: {socket.status} · started{" "}
-            {new Date(session.started_at).toLocaleTimeString()}
-          </span>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="text-xl font-semibold tracking-tight">Live class</h1>
+          <LiveBadge label="Live" />
+          <ElapsedTime since={session.started_at} />
+          <ConnectionPill status={socket.status} />
         </div>
         <Button variant="destructive" onClick={endClass} disabled={ending}>
           {ending ? "Ending…" : "End class"}
         </Button>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
         <div className="flex flex-col gap-4">
           <SlideStage
             classId={session.class_id}
@@ -192,8 +194,8 @@ export default function InstructorLiveRoomPage() {
             busy={slideBusy}
             onChange={changeSlide}
           />
-          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_200px]">
-            <div className="rounded-card border border-line bg-surface p-3 dark:border-slate-700 dark:bg-slate-900">
+          <div className="grid items-stretch gap-4 sm:grid-cols-[minmax(0,1fr)_200px]">
+            <div className="flex items-center rounded-card border border-line bg-surface p-4 shadow-card">
               <ClassStrip counts={counts} connected={connected} />
             </div>
             <VideoStage
@@ -203,7 +205,7 @@ export default function InstructorLiveRoomPage() {
             />
           </div>
         </div>
-        <aside className="flex flex-col gap-6">
+        <aside className="flex flex-col gap-4">
           <AlertPanel alerts={alerts} nudgingId={nudgingId} onNudge={nudge} />
           <StudentList students={students} />
         </aside>
