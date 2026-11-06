@@ -2,13 +2,13 @@
 
 import type { ReactNode } from "react";
 import { RequireRole } from "@/components/auth/RequireRole";
-import { AppShell } from "@/components/layout/AppShell";
+import { AppShell, type NavItem } from "@/components/layout/AppShell";
 
-const NAV = [
-  { href: "/instructor", label: "Classes" },
-  { href: "/instructor/schedule", label: "Schedule" },
-  { href: "/instructor/reports", label: "Reports" },
-  { href: "/instructor/settings", label: "Settings" },
+const NAV: NavItem[] = [
+  { href: "/instructor", label: "Classes", icon: "layers" },
+  { href: "/instructor/schedule", label: "Schedule", icon: "calendar" },
+  { href: "/instructor/reports", label: "Reports", icon: "bar-chart" },
+  { href: "/instructor/settings", label: "Settings", icon: "sliders" },
 ];
 
 export default function InstructorLayout({ children }: { children: ReactNode }) {
